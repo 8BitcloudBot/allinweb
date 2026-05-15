@@ -31,9 +31,12 @@ class GenerationIntegrationModule:
     def query_router(self, query: str) -> str:
         prompt = (
             "将用户问题分类为以下三种之一（只输出分类词）：\n"
-            "list   - 用户想要菜品列表或推荐（如：推荐几个素菜、有什么川菜）\n"
-            "detail - 用户想要制作方法或步骤（如：宫保鸡丁怎么做、需要什么食材）\n"
-            "general - 其他（如：什么是川菜、技巧、营养价值、闲聊）\n\n"
+            "list   - 用户想要菜品列表或推荐，或按场景/食材/口味推荐菜\n"
+            "         如：推荐几个素菜、有什么川菜、夏天适合吃什么、下饭菜、用鸡蛋能做什么\n"
+            "detail - 用户想要制作方法或步骤\n"
+            "         如：宫保鸡丁怎么做、需要什么食材、怎么炒\n"
+            "general - 知识问答、技巧、营养、食材替代、闲聊等\n"
+            "         如：什么是川菜、没有淀粉用什么代替、炒菜技巧\n\n"
             f"用户问题: {query}\n分类:"
         )
         resp = self.client.chat.completions.create(
@@ -201,7 +204,8 @@ class GenerationIntegrationModule:
         context_text = self._prepare_context(context_docs, score_map)
         
         prompt = (
-            "根据以下参考资料回答用户问题，用简洁易懂的语言，Markdown 格式：\n\n"
+            "根据以下菜谱资料回答用户问题，用简洁易懂的语言，Markdown 格式。\n"
+            "如果资料中有相关内容但不完全匹配，可以根据菜谱常识推断和补充。\n\n"
             f"{context_text}\n\n用户问题: {query}"
         )
         resp = self.client.chat.completions.create(
@@ -209,7 +213,7 @@ class GenerationIntegrationModule:
             messages=[
                 {
                     "role": "system",
-                    "content": "你是烹饪知识助手。严格基于参考资料回答，不确定就说不知道。不要提及'根据资料'或统计数量。",
+                    "content": "你是烹饪知识助手。请结合菜谱资料和烹饪常识回答。即使资料没有直接提及，也尝试从已有菜谱中提取相关信息给出建议。不要提及'根据资料'或统计数量。",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -231,7 +235,7 @@ class GenerationIntegrationModule:
         system_prompts = {
             "list": "你是专业美食推荐师。只能推荐可推荐列表中列出的菜品，禁止编造。输出纯 JSON 数组。",
             "detail": "你是专业厨师。严格基于菜谱资料回答。资料中没有的菜，告知'暂未收录'，绝不编造。不要提及'根据资料'或统计数量。",
-            "general": "你是烹饪知识助手。严格基于参考资料回答，不确定就说不知道。不要提及'根据资料'或统计数量。",
+            "general": "你是烹饪知识助手。请结合菜谱资料和烹饪常识回答。即使资料没有直接提及，也尝试从已有菜谱中提取相关信息给出建议。不要提及'根据资料'或统计数量。",
         }
 
         user_prompts = {
@@ -254,7 +258,7 @@ class GenerationIntegrationModule:
                 f"菜谱资料:\n{context_text}\n\n"
                 f"用户问题: {query}"
             ),
-            "general": f"根据以下参考资料回答用户问题，用简洁易懂的语言，Markdown 格式：\n\n{context_text}\n\n用户问题: {query}",
+            "general": f"根据以下菜谱资料回答用户问题。如果资料中没有直接答案，请从已知菜谱中提取相关的菜品或技巧来回答。用简洁易懂的语言，Markdown 格式：\n\n{context_text}\n\n用户问题: {query}",
         }
 
         stream = self.client.chat.completions.create(
