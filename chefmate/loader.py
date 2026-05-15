@@ -35,7 +35,13 @@ class DataPreparationModule:
     def load_documents(self) -> List[Document]:
         documents = []
         for md_file in Path(self.data_path).rglob("*.md"):
-            content = md_file.read_text(encoding="utf-8")
+            try:
+                content = md_file.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                try:
+                    content = md_file.read_text(encoding="gbk")
+                except UnicodeDecodeError:
+                    content = md_file.read_text(encoding="latin-1")
             parent_id = _deterministic_id(md_file)
             doc = Document(
                 page_content=content,

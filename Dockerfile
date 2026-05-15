@@ -2,8 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
 COPY pyproject.toml uv.lock ./
-RUN pip install uv && uv sync
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple uv && uv sync
 
 COPY . .
 RUN mkdir -p runtime
