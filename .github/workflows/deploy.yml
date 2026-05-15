@@ -33,14 +33,6 @@ jobs:
           name: dist
           path: dist
 
-      - name: Debug secrets
-        run: |
-          if [ -z "${{ secrets.ALIYUN_SERVER_HOST }}" ]; then
-            echo "ERROR: ALIYUN_SERVER_HOST is empty"
-            exit 1
-          fi
-          echo "Host set: ${{ secrets.ALIYUN_SERVER_HOST }}"
-
       - name: Deploy to Alibaba Cloud
         run: |
           mkdir -p ~/.ssh
@@ -48,17 +40,19 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H '${{ secrets.ALIYUN_SERVER_HOST }}' >> ~/.ssh/known_hosts
 
-          # 1. Deploy frontend
-          tar czf - --no-xattrs -C dist . | ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "tar xzf - -C /var/www/vincentbuilds"
+          # 1. Deploy frontend (clean existing files first)
+          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "sudo rm -rf /var/www/vincentbuilds/* /var/www/vincentbuilds/.* 2>/dev/null; sudo mkdir -p /var/www/vincentbuilds"
+          tar czf - --no-xattrs -C dist . | ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "sudo tar xzf - -C /var/www/vincentbuilds && sudo chown -R admin:admin /var/www/vincentbuilds"
 
-          # 2. Copy backend
+          # 2. Copy backend source
+          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "sudo mkdir -p /var/www/vincentbuilds-api && sudo chown -R admin:admin /var/www/vincentbuilds-api"
           rsync -avz --exclude 'node_modules' --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
             chefmate/ main.py config.py pyproject.toml uv.lock Dockerfile docker-compose.yml \
             data/ vector_index/ \
             '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}:/var/www/vincentbuilds-api/'
 
           # 3. Restart backend
-          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "cd /var/www/vincentbuilds-api && docker compose up -d --build"
+          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "cd /var/www/vincentbuilds-api && sudo docker compose up -d --build"
 
           # 4. Reload nginx
           ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "sudo systemctl reload nginx"
