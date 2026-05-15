@@ -27,7 +27,7 @@ class RetrievalOptimizationModule:
         )
 
     def hybrid_search(self, query: str, top_k: int = 3, filters: Optional[Dict[str, Any]] = None) -> List[Document]:
-        """混合检索，支持可选的元数据筛选"""
+        """混合检索，支持可选的元数据筛选。返回 (docs, rrf_scores)"""
         fetch_k = max(top_k * 3, 15)
 
         vec_retriever = self.vectorstore.as_retriever(
@@ -38,14 +38,10 @@ class RetrievalOptimizationModule:
         vector_docs = vec_retriever.invoke(query)
         bm25_docs = bm25_retriever.invoke(query)
 
-        # 应用元数据筛选
         if filters:
             vector_docs_filtered = self._apply_filters(vector_docs, filters)
             bm25_docs_filtered = self._apply_filters(bm25_docs, filters)
-            
-            # 如果筛选后没有结果，尝试放宽条件
             if not vector_docs_filtered and not bm25_docs_filtered:
-                # 对于份量筛选，返回份量最大的结果
                 if "min_servings" in filters:
                     vector_docs = self._sort_by_servings(vector_docs, reverse=True)[:top_k]
                     bm25_docs = self._sort_by_servings(bm25_docs, reverse=True)[:top_k]
@@ -56,7 +52,7 @@ class RetrievalOptimizationModule:
                 vector_docs = vector_docs_filtered
                 bm25_docs = bm25_docs_filtered
 
-        reranked_docs = self._rrf_rerank(vector_docs, bm25_docs)
+        reranked_docs, rrf_scores = self._rrf_rerank(vector_docs, bm25_docs)
         return reranked_docs[:top_k]
     
     def _apply_filters(self, docs: List[Document], filters: Dict[str, Any]) -> List[Document]:
@@ -97,8 +93,9 @@ class RetrievalOptimizationModule:
     def get_scores_for_docs(
         self, query: str, docs: List[Document]
     ) -> Dict[int, Tuple[str, float]]:
+        score_k = max(len(docs) * 3, 20)
         vec_scored = self.vectorstore.similarity_search_with_relevance_scores(
-            query, k=10
+            query, k=score_k
         )
         vec_score_map = {}
         for doc, score in vec_scored:
@@ -147,7 +144,7 @@ class RetrievalOptimizationModule:
         vector_results: List[Document],
         bm25_results: List[Document],
         k: int = 60,
-    ) -> List[Document]:
+    ) -> tuple[List[Document], dict[int, float]]:
         rrf_scores = {}
 
         for rank, doc in enumerate(vector_results):
@@ -164,4 +161,4 @@ class RetrievalOptimizationModule:
             key=lambda x: rrf_scores.get(x[0], 0),
             reverse=True,
         )
-        return [doc for _, doc in sorted_docs]
+        return [doc for _, doc in sorted_docs], rrf_scores

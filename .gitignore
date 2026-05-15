@@ -30,6 +30,7 @@ venv/
 
 # macOS-specific files
 .DS_Store
+._*
 
 # jetbrains setting folder
 .idea/

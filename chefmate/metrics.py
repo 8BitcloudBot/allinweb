@@ -54,10 +54,6 @@ class MetricsResult:
             pid = doc.metadata.get("parent_id", "")
             group = parent_groups.get(pid, {"scores": [], "vecs": [], "bm25s": [], "matched": 0})
             best = max(group["scores"], default=0.0)
-
-            if best <= 0.0:
-                continue
-
             avg_vec = round(sum(group["vecs"]) / max(len(group["vecs"]), 1), 3)
             avg_bm25 = round(sum(group["bm25s"]) / max(len(group["bm25s"]), 1), 3)
 
@@ -75,15 +71,10 @@ class MetricsResult:
                 content_preview=preview,
             ))
 
-        top_score = max(all_scores, default=0.0)
-        mean_score = sum(all_scores) / max(len(all_scores), 1)
-
         sources.sort(key=lambda s: s.best_score, reverse=True)
 
-        confidence = round(
-            min(1.0, top_score * 0.5 + mean_score * 0.3 + min(len(sources) / 3, 0.5) * 0.4),
-            2,
-        )
+        retrieval_count = len(sources)
+        confidence = round(min(1.0, retrieval_count / max(20, 1) * 0.7 + 0.3), 2)
 
         return MetricsResult(
             query=QueryInfo(
@@ -93,7 +84,7 @@ class MetricsResult:
             ),
             sources=sources,
             confidence=confidence,
-            retrieval_count=len(all_scores),
+            retrieval_count=retrieval_count,
             elapsed_ms=round(elapsed_ms, 1),
         )
 

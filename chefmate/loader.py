@@ -35,6 +35,9 @@ class DataPreparationModule:
     def load_documents(self) -> List[Document]:
         documents = []
         for md_file in Path(self.data_path).rglob("*.md"):
+            # 跳过 macOS 资源叉文件和隐藏文件
+            if md_file.name.startswith("._") or md_file.name.startswith("."):
+                continue
             try:
                 content = md_file.read_text(encoding="utf-8")
             except UnicodeDecodeError:
