@@ -1,0 +1,62 @@
+name: Deploy Frontend + Backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run build:production
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+  deploy-aliyun:
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy to Alibaba Cloud
+        env:
+          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
+          HOST: ${{ secrets.ALIYUN_SERVER_HOST }}
+          USER: ${{ secrets.ALIYUN_SERVER_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          # 1. Deploy frontend (static files)
+          tar czf - --no-xattrs -C dist . | ssh $USER@$HOST "tar xzf - -C /var/www/vincentbuilds"
+
+          # 2. Copy backend source
+          rsync -avz --exclude 'node_modules' --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
+            chefmate/ main.py config.py pyproject.toml uv.lock Dockerfile docker-compose.yml .env \
+            data/ vector_index/ \
+            $USER@$HOST:/var/www/vincentbuilds-api/
+
+          # 3. Rebuild & restart backend
+          ssh $USER@$HOST "cd /var/www/vincentbuilds-api && docker compose up -d --build"
+
+          # 4. Reload nginx
+          ssh $USER@$HOST "sudo systemctl reload nginx"

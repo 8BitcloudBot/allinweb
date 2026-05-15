@@ -1,0 +1,51 @@
+---
+import { getCollection, render } from 'astro:content';
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: project,
+  }));
+}
+
+const project = Astro.props;
+const { Content } = await render(project);
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+---
+
+<BlogPostLayout
+  title={project.data.title}
+  date={project.data.pubDate}
+  description={project.data.description}
+  tags={project.data.tags}
+>
+  {project.data.github && (
+    <div class="not-prose mb-6 flex gap-3">
+      <a
+        href={project.data.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 rounded-full border border-black/8 px-4 py-2 text-sm no-underline! opacity-70 transition-all duration-200 hover:opacity-100 dark:border-white/10"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a5 5 0 0 0-1-3.2c3.3-.4 6.7-1.6 6.7-7.3a5.7 5.7 0 0 0-1.5-3.9 5.2 5.2 0 0 0-.1-3.9s-1.2-.4-3.9 1.5a13.4 13.4 0 0 0-7.2 0C5.3-.7 4.1-.3 4.1-.3A5.2 5.2 0 0 0 4 3.6a5.7 5.7 0 0 0-1.5 3.9c0 5.7 3.4 6.9 6.7 7.3a5 5 0 0 0-1 3.2v4"/><path d="M9 18c-4.5 2-5-2-7-2"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  )}
+  {project.data.url && (
+    <div class="not-prose mb-6 flex gap-3">
+      <a
+        href={project.data.url.startsWith('/') ? `${base}${project.data.url.slice(1)}` : project.data.url}
+        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-600 no-underline! transition-all duration-200 hover:bg-emerald-500/20 dark:text-emerald-400"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Live Demo
+      </a>
+    </div>
+  )}
+  <Content />
+</BlogPostLayout>

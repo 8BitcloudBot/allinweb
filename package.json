@@ -1,0 +1,33 @@
+{
+  "name": "portfolio",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "build:production": "ASTRO_ENV=production astro build",
+    "build:github": "ASTRO_ENV=github astro build",
+    "build:development": "ASTRO_ENV=development astro build",
+    "deploy:production": "./deploy.sh",
+    "deploy:github": "echo 'GitHub Pages is auto-deployed on push. Run: git push origin main'",
+    "deploy:all": "./deploy.sh",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^5.0.4",
+    "@astrojs/react": "^5.0.4",
+    "@astrojs/sitemap": "^3.7.2",
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "astro": "^6.1.9",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "superpowers-zh": "^1.2.1",
+    "tailwindcss": "^4.2.4"
+  }
+}

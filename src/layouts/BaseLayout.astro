@@ -1,0 +1,50 @@
+---
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+import BackToTop from '../components/layout/BackToTop.astro';
+import SEO from '../components/ui/SEO.astro';
+import '../styles/global.css';
+import { SITE } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: boolean;
+  pubDate?: Date;
+}
+
+const { title = SITE.title, description = SITE.description, image, article, pubDate } = Astro.props;
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <SEO title={title} description={description} image={image} article={article} pubDate={pubDate} />
+    <link rel="preconnect" href="https://fonts.loli.net" />
+    <link rel="preconnect" href="https://gstatic.loli.net" crossorigin />
+    <link href="https://fonts.loli.net/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet" />
+    <script is:inline>
+      const stored = localStorage.getItem('theme');
+      // Default to dark mode if no preference stored
+      if (stored !== 'light') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <Header />
+    <main class="flex-1 px-7 py-10 overflow-x-hidden">
+      <slot />
+    </main>
+    <Footer />
+    <BackToTop />
+  </body>
+</html>

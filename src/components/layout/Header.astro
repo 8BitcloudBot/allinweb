@@ -1,0 +1,57 @@
+---
+import Icon from '../icons/Icon.astro';
+import ThemeToggle from '../ui/ThemeToggle.tsx';
+import { SITE } from '../../config';
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === base;
+---
+
+<header class="sticky top-0 z-40 px-4 pt-4">
+  <nav class="mx-auto flex w-full max-w-5xl items-center justify-between rounded-full border border-black/8 bg-white/72 px-4 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/45 dark:shadow-[0_12px_40px_rgba(0,0,0,0.28)]">
+    <a href={base} class="flex items-center gap-3 no-underline! opacity-100" title="Home">
+      <span class:list={[
+        'flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300',
+        isHome
+          ? 'border-primary/40 bg-primary/12 text-primary-dark dark:text-primary-mist'
+          : 'border-black/8 bg-white/80 text-black/70 hover:border-primary/30 hover:text-primary-dark dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:text-primary-mist',
+      ]}>
+        <Icon name="home" class="text-lg" />
+      </span>
+      <div class="hidden sm:block leading-tight">
+        <div class="text-[0.7rem] font-mono tracking-[0.24em] opacity-40">VINCENT HU</div>
+        <div class="text-sm font-semibold opacity-75">Builds for the web</div>
+      </div>
+    </a>
+    <div class="flex items-center gap-2 rounded-full border border-black/6 bg-black/[0.03] px-2 py-1 dark:border-white/8 dark:bg-white/[0.04]">
+      {SITE.nav.map((item) => (
+        <a
+          href={item.path}
+          class:list={[
+            'flex h-10 w-10 items-center justify-center rounded-full no-underline! transition-all duration-300',
+            currentPath.startsWith(item.path)
+              ? 'bg-primary/14 text-primary-dark shadow-[0_6px_20px_rgba(86,69,212,0.18)] dark:text-primary-mist'
+              : 'text-black/55 hover:bg-primary/10 hover:text-primary-dark dark:text-white/55 dark:hover:text-primary-mist',
+          ]}
+          title={item.name}
+        >
+          <Icon name={item.icon} class="text-lg" />
+        </a>
+      ))}
+      {SITE.social.map((item) => (
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={item.name}
+          class="flex h-10 w-10 items-center justify-center rounded-full text-black/55 transition-all duration-300 hover:bg-white/80 hover:text-black dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          <Icon name={item.icon.toLowerCase()} class="text-lg" />
+        </a>
+      ))}
+    </div>
+    <ThemeToggle client:load />
+  </nav>
+</header>

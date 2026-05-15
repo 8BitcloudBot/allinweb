@@ -1,0 +1,113 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+
+const photoModules = import.meta.glob(
+  '/public/photos/**/*.{jpg,jpeg,png,webp,JPG,PNG}',
+  { eager: true, query: '?url', import: 'default' }
+);
+
+const photos = Object.entries(photoModules)
+  .map(([path]) => {
+    const relativePath = path.split('/public/photos/')[1] || '';
+    const name = relativePath.replace(/\.\w+$/, '');
+    return { src: `${base}photos/${relativePath}`, name };
+  })
+  .sort((a, b) => b.name.localeCompare(a.name));
+---
+
+<BaseLayout title="Photos | Vincent Hu" description="My photo collection and wallpaper gallery.">
+  <div class="max-w-6xl mx-auto animate-slide-enter">
+    <div class="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="mb-2 text-xs font-mono tracking-[0.24em] opacity-35">PHOTO WALL</p>
+        <h1 class="text-3xl font-bold font-condensed md:text-4xl">Photos</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="rounded-full border border-black/8 bg-white/55 px-3 py-1 text-sm opacity-55 dark:border-white/10 dark:bg-white/[0.04]">
+          {photos.length} captures
+        </span>
+        <p class="text-sm opacity-40 italic">Click any image to view it larger.</p>
+      </div>
+    </div>
+
+    {photos.length === 0 ? (
+      <div class="prose-custom">
+        <p class="opacity-50">No photos yet. Add your images to <code class="font-mono text-sm bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">public/photos/</code> directory.</p>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {photos.map((photo) => (
+          <button
+            type="button"
+            class="group photo-tile relative aspect-square overflow-hidden rounded-[1.4rem] border border-black/8 bg-gray-100 text-left shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-gray-900 dark:shadow-[0_16px_40px_rgba(0,0,0,0.26)]"
+            data-photo-src={photo.src}
+            aria-label="Open photo preview"
+          >
+            <img
+              src={photo.src}
+              alt={photo.name}
+              loading="lazy"
+              class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div class="absolute inset-0 bg-linear-to-t from-black/45 via-black/0 to-transparent opacity-80" />
+            <div class="absolute inset-x-0 bottom-0 flex items-end justify-end gap-3 p-4">
+              <span class="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[0.65rem] font-mono tracking-[0.18em] text-white/70">VIEW</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <div id="photo-lightbox" class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/0 p-5 opacity-0 transition-all duration-300">
+    <button type="button" id="photo-lightbox-close" class="absolute inset-0 cursor-default" aria-label="Close photo preview"></button>
+    <div class="relative z-10 w-full max-w-5xl scale-[0.96] transition-transform duration-300">
+      <img id="photo-lightbox-image" src="" alt="" class="max-h-[78vh] w-full rounded-[1.6rem] object-contain bg-black/40 shadow-[0_30px_120px_rgba(0,0,0,0.45)]" />
+      <div class="mt-4 flex justify-end text-white">
+        <button type="button" id="photo-lightbox-action" class="rounded-full border border-white/16 bg-white/8 px-4 py-2 text-sm text-white/86 transition hover:bg-white/14">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const overlay = document.getElementById('photo-lightbox');
+    const overlayImage = document.getElementById('photo-lightbox-image');
+    const overlayClose = document.getElementById('photo-lightbox-close');
+    const overlayAction = document.getElementById('photo-lightbox-action');
+    const photoTiles = document.querySelectorAll('.photo-tile');
+
+    const closeLightbox = () => {
+      if (!overlay) return;
+      overlay.classList.add('pointer-events-none', 'opacity-0', 'bg-black/0');
+      overlay.classList.remove('opacity-100', 'bg-black/75');
+      document.body.classList.remove('overflow-hidden');
+    };
+
+    const openLightbox = (src) => {
+      if (!overlay || !overlayImage) return;
+      overlayImage.setAttribute('src', src);
+      overlayImage.setAttribute('alt', 'Photo preview');
+      overlay.classList.remove('pointer-events-none', 'opacity-0', 'bg-black/0');
+      overlay.classList.add('opacity-100', 'bg-black/75');
+      document.body.classList.add('overflow-hidden');
+    };
+
+    photoTiles.forEach((tile) => {
+      tile.addEventListener('click', () => {
+        const src = tile.getAttribute('data-photo-src');
+        if (src) openLightbox(src);
+      });
+    });
+
+    overlayClose?.addEventListener('click', closeLightbox);
+    overlayAction?.addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeLightbox();
+    });
+  </script>
+</BaseLayout>

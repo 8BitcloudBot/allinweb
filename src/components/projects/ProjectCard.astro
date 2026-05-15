@@ -1,0 +1,50 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  href: string;
+  tags?: string[];
+  github?: string;
+  url?: string;
+  base?: string;
+}
+
+const { title, description, href, tags = [], github, url, base = '' } = Astro.props;
+
+const demoUrl = url
+  ? (url.startsWith('/') ? `${base.replace(/\/$/, '')}${url}` : url)
+  : '';
+---
+
+<div class="notion-card">
+  <div class="flex items-start justify-between gap-3">
+    <a href={href} class="min-w-0 flex-1 no-underline!">
+      <h3 class="font-semibold text-lg group-hover:text-primary-dark transition-colors duration-200">{title}</h3>
+    </a>
+    <div class="flex shrink-0 gap-1.5">
+      {github && (
+        <a href={github} target="_blank" rel="noopener noreferrer" class="rounded-full border border-black/8 px-2.5 py-1 text-xs opacity-45 no-underline! transition-all duration-200 hover:opacity-100 dark:border-white/10">
+          GitHub
+        </a>
+      )}
+      {!github && (
+        <span class="rounded-full border border-black/8 px-2.5 py-1 text-xs opacity-20 cursor-not-allowed dark:border-white/10">
+          GitHub
+        </span>
+      )}
+      {demoUrl && (
+        <a href={demoUrl} class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-600 no-underline! transition-all duration-200 hover:bg-emerald-500/20 dark:text-emerald-400">
+          Demo
+        </a>
+      )}
+    </div>
+  </div>
+  <a href={href} class="mt-3 block no-underline!">
+    <p class="text-sm leading-6 opacity-58">{description}</p>
+    <div class="mt-4 flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span class="rounded-full bg-black/[0.04] px-2.5 py-1 text-xs opacity-55 dark:bg-white/[0.06]">{tag}</span>
+      ))}
+    </div>
+  </a>
+</div>

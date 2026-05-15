@@ -1,0 +1,31 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  projects: CollectionEntry<'projects'>[];
+}
+
+const { projects } = Astro.props;
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+
+const sorted = projects.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+---
+
+<div class="max-w-prose mx-auto animate-slide-enter">
+  <div class="grid gap-4">
+    {sorted.map((project) => (
+      <ProjectCard
+        title={project.data.title}
+        description={project.data.description}
+        href={`${base}projects/${project.id}`}
+        tags={project.data.tags}
+        github={project.data.github}
+        url={project.data.url}
+        base={base}
+      />
+    ))}
+  </div>
+</div>

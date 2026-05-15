@@ -1,0 +1,413 @@
+---
+title: "Portfolio Website — 个人技术博客与作品集"
+description: "基于 Astro + React + Tailwind CSS 构建的现代化个人网站，支持三环境部署、暗黑模式、MDX 博客，Lighthouse 三刷 90+"
+pubDate: 2026-04-24
+tags: ["Astro", "React", "Tailwind CSS", "TypeScript", "MDX", "GitHub Actions", "Nginx"]
+github: "https://github.com/8BitcloudBot/portfolio"
+---
+
+> **用技术栈说话**——一个为面试官和技术社区打造的个人网站，从零搭建到三环境部署的完整实践记录。
+
+## 目录
+
+- [背景与需求](#背景与需求)
+- [技术选型](#技术选型)
+- [系统架构](#系统架构)
+- [核心功能](#核心功能)
+- [技术亮点](#技术亮点)
+- [三环境部署](#三环境部署)
+- [项目结构](#项目结构)
+- [性能优化](#性能优化)
+- [踩坑记录](#踩坑记录)
+- [项目地址](#项目地址)
+
+---
+
+## 背景与需求
+
+作为后端/AI 方向的开发者，我一直缺少一个能系统性展示技术能力的个人主页。面试时只能口头描述项目，缺乏可视化的作品集；写技术笔记散落在各平台，没有统一的知识沉淀渠道。
+
+**核心需求**：
+
+- **技术博客**：支持 Markdown/MDX，代码高亮，标签分类，方便记录 AI/后端学习笔记
+- **项目展示**：每个项目有独立详情页，展示技术架构、实现思路和在线/GitHub 链接
+- **面试友好**：加载速度快、移动端适配、SEO 优化，让面试官能快速了解技术栈
+- **运维简单**：一键部署，支持多环境切换，内容更新无需重新构建整个项目
+
+---
+
+## 技术选型
+
+### 为什么是 Astro？
+
+| 方案 | 优点 | 缺点 | 结论 |
+|------|------|------|------|
+| Next.js | 生态强大、SSR/SSG | 博客场景过重、构建慢 | ❌ 过度设计 |
+| Hugo | 构建极快、Go 模板 | 模板语法不友好、生态封闭 | ❌ 开发体验差 |
+| **Astro** | 岛屿架构、零 JS 默认、构建快 | 生态相对年轻 | ✅ 最佳选择 |
+| VitePress | Vue 生态、文档友好 | 定向文档场景、自定义受限 | ❌ 不够灵活 |
+
+**Astro 的核心优势**：
+
+- **岛屿架构（Islands）**：页面默认纯静态 HTML，仅在需要时水合交互组件（如 ThemeToggle）
+- **零 JS 开销**：博客文章页几乎不发送 JavaScript，首屏加载极快
+- **内容集合（Collections）**：内置 Markdown/MDX 支持，Zod schema 类型安全
+- **多框架集成**：可混用 React、Vue、Svelte，本项目仅用 React 处理少量交互
+
+### 完整技术栈
+
+| 层级 | 技术 | 版本 | 用途 |
+|------|------|------|------|
+| 框架 | Astro | 6.x | 静态站点生成、路由、内容管理 |
+| UI | React | 19 | ThemeToggle 等交互组件 |
+| 样式 | Tailwind CSS | 4.x | 原子化 CSS、响应式设计 |
+| 内容 | MDX | - | 博客文章、项目详情页 |
+| 类型 | TypeScript | 5.x | 全项目类型安全 |
+| 部署 | Nginx + GitHub Pages | - | 双环境托管 |
+| CI/CD | GitHub Actions | - | 自动化构建部署 |
+
+---
+
+## 系统架构
+
+![系统架构](/architecture.svg)
+
+---
+
+## 核心功能
+
+### 1. 博客系统
+
+基于 Astro Content Collections 实现，支持 Markdown 和 MDX 两种格式：
+
+```typescript
+// src/content.config.ts
+const blog = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    pubDate: z.date(),
+    description: z.string(),
+    tags: z.array(z.string()),
+    lang: z.enum(['zh', 'en']).optional(),
+  }),
+});
+```
+
+**特性**：
+- 代码高亮：使用 Shiki，支持 `css-variables` 主题，暗黑模式自适应
+- 标签系统：自动生成标签页面，支持按标签筛选
+- SEO 优化：自动生成 `<meta>` 标签、Open Graph、结构化数据
+
+### 2. 项目展示
+
+每个项目是独立的 MDX 文件，支持富文本内容：
+
+```mdx
+---
+title: "项目名称"
+description: "项目描述"
+tags: ["React", "TypeScript"]
+github: "https://github.com/username/repo"
+live: "https://example.com"
+---
+
+项目详情，支持 JSX 组件嵌入...
+```
+
+### 3. 暗黑模式
+
+唯一的客户端交互组件，使用 React 实现：
+
+```tsx
+// src/components/ui/ThemeToggle.tsx
+export default function ThemeToggle() {
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const dark = stored !== 'light';
+    setIsDark(dark);
+  }, []);
+
+  function toggle() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  }
+  // ...
+}
+```
+
+**设计决策**：
+- 默认暗黑模式（开发者偏好）
+- 使用 `localStorage` 持久化用户选择
+- 通过 `class="dark"` 切换，配合 Tailwind 的 `dark:` 前缀
+
+### 4. 响应式设计
+
+移动优先，基于 Tailwind CSS 断点系统：
+
+```css
+/* 默认移动端 */
+/* sm: 640px+ */
+/* md: 768px+ */
+/* lg: 1024px+ */
+/* xl: 1280px+ */
+```
+
+---
+
+## 技术亮点
+
+### 1. 多环境配置
+
+通过环境变量切换不同部署环境的配置：
+
+```typescript
+// astro.config.ts
+const environments = {
+  production: {
+    site: 'https://vincentbuilds.fun',
+    base: '/',
+  },
+  github: {
+    site: 'https://8bitcloudbot.github.io',
+    base: '/portfolio',  // GitHub Pages 子路径
+  },
+  development: {
+    site: 'http://localhost:4321',
+    base: '/',
+  },
+};
+
+const env = process.env.ASTRO_ENV || 'development';
+const config = environments[env];
+```
+
+**解决的问题**：GitHub Pages 部署在子路径 `/portfolio` 下，所有资源路径需要自动适配。
+
+### 2. 三环境一键部署
+
+`deploy.sh` 支持三种部署模式：
+
+```bash
+./deploy.sh production   # 部署到阿里云
+./deploy.sh github       # 触发 GitHub Pages
+./deploy.sh all          # 三端同步
+```
+
+阿里云部署使用 **tar 管道** 替代 SCP，避免子目录传输遗漏：
+
+```bash
+# 旧方案（SCP 通配符可能漏文件）
+scp -r dist/* user@host:/path/
+
+# 新方案（tar 管道保证完整性）
+tar czf - --no-xattrs -C dist . | ssh user@host "tar xzf - -C /path"
+```
+
+### 3. GitHub Actions CI/CD
+
+支持自动和手动两种触发方式：
+
+```yaml
+# .github/workflows/deploy.yml
+on:
+  push:
+    branches: [main]        # 自动部署到 GitHub Pages
+  workflow_dispatch:         # 手动触发，可选环境
+    inputs:
+      environment:
+        type: choice
+        options: [github, production, all]
+```
+
+**Secrets 配置**：
+- `ALIYUN_SSH_KEY`：阿里云 SSH 私钥
+- `ALIYUN_SERVER_HOST`：服务器 IP
+- `ALIYUN_SERVER_USER`：服务器用户名
+- `ALIYUN_DEPLOY_PATH`：部署路径
+
+### 4. Shiki 代码高亮
+
+使用 Astro 内置的 Shiki 语法高亮器，支持暗黑模式自适应：
+
+```typescript
+// astro.config.ts
+markdown: {
+  shikiConfig: {
+    theme: 'css-variables',  // 使用 CSS 变量，自动适配主题
+    wrap: false,             // 不自动换行，保持横向滚动
+  },
+},
+```
+
+---
+
+## 三环境部署
+
+| 环境 | URL | 触发方式 | 服务器 |
+|------|-----|----------|--------|
+| **本地开发** | `http://localhost:4321` | `npm run dev` | 本地 |
+| **GitHub Pages** | [8bitcloudbot.github.io/portfolio](https://8bitcloudbot.github.io/portfolio) | `git push main` | GitHub Actions |
+| **阿里云生产** | [vincentbuilds.fun](https://vincentbuilds.fun) | `npm run deploy:production` | 阿里云 ECS |
+
+### 阿里云服务器配置
+
+```nginx
+# /etc/nginx/conf.d/vincentbuilds.conf
+server {
+    listen 80;
+    server_name vincentbuilds.fun www.vincentbuilds.fun;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name vincentbuilds.fun www.vincentbuilds.fun;
+
+    ssl_certificate /etc/letsencrypt/live/vincentbuilds.fun/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vincentbuilds.fun/privkey.pem;
+
+    root /var/www/vincentbuilds;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ $uri/index.html =404;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+---
+
+## 项目结构
+
+```
+portfolio/
+├── .github/workflows/
+│   └── deploy.yml              # CI/CD 多环境部署
+├── public/
+│   ├── photos/                 # 照片画廊图片
+│   └── favicon.svg             # 网站图标
+├── src/
+│   ├── components/
+│   │   ├── blog/               # 博客列表、文章卡片
+│   │   ├── icons/              # 内联 SVG 图标
+│   │   ├── layout/             # Header、Footer、BackToTop
+│   │   ├── projects/           # 项目卡片、列表
+│   │   └── ui/                 # ThemeToggle、SEO
+│   ├── content/
+│   │   ├── blog/               # 博客文章（14 篇）
+│   │   └── projects/           # 项目详情（2 个）
+│   ├── layouts/
+│   │   └── BaseLayout.astro    # 主布局
+│   ├── pages/
+│   │   ├── index.astro         # 首页
+│   │   ├── about.astro         # 关于页
+│   │   ├── blog/               # 博客路由
+│   │   ├── projects/           # 项目路由
+│   │   └── photos.astro        # 照片页
+│   ├── styles/
+│   │   └── global.css          # 全局样式
+│   └── config.ts               # 站点配置
+├── astro.config.ts             # Astro 多环境配置
+├── deploy.sh                   # 部署脚本
+├── tsconfig.json               # TypeScript 配置
+└── package.json                # 依赖管理
+```
+
+---
+
+## 性能优化
+
+### Lighthouse 评分
+
+| 指标 | 分数 | 说明 |
+|------|------|------|
+| Performance | 95+ | 静态生成、零 JS、图片优化 |
+| Accessibility | 95+ | 语义化 HTML、ARIA 标签 |
+| Best Practices | 95+ | HTTPS、安全头、现代 API |
+| SEO | 95+ | sitemap、meta、结构化数据 |
+
+### 优化措施
+
+1. **零 JavaScript 默认**：Astro 页面默认不发送 JS，仅 ThemeToggle 组件水合
+2. **图片优化**：使用 Astro 内置的图片处理，自动生成 WebP 格式
+3. **静态资源缓存**：Nginx 配置 30 天缓存，使用 `immutable` 指令
+4. **字体优化**：使用系统字体栈，避免额外的字体加载
+5. **CSS 压缩**：Tailwind CSS 生产构建自动 purge 未使用的样式
+
+---
+
+## 踩坑记录
+
+### 1. GitHub Pages 子路径问题
+
+**问题**：部署到 GitHub Pages 后，所有资源路径 404。
+
+**原因**：GitHub Pages 部署在 `https://username.github.io/portfolio/`，资源路径需要 `/portfolio/` 前缀。
+
+**解决**：通过 `astro.config.ts` 的 `base` 配置自动适配：
+
+```typescript
+github: {
+  site: 'https://8bitcloudbot.github.io',
+  base: '/portfolio',  // 自动为所有资源添加前缀
+}
+```
+
+### 2. SCP 子目录传输遗漏
+
+**问题**：使用 `scp -r dist/*` 部署时，部分嵌套目录丢失。
+
+**原因**：SCP 通配符展开在处理深层目录时不可靠。
+
+**解决**：改用 tar 管道传输：
+
+```bash
+tar czf - --no-xattrs -C dist . | ssh user@host "tar xzf - -C /path"
+```
+
+### 3. macOS 扩展属性警告
+
+**问题**：tar 打包时出现 `._xxx` 扩展属性文件警告。
+
+**解决**：添加 `--no-xattrs` 参数排除 macOS 特有的扩展属性。
+
+### 4. Shiki 暗黑模式适配
+
+**问题**：代码高亮使用硬编码背景色，切换暗黑模式时不协调。
+
+**解决**：改用 `css-variables` 主题，通过 CSS 变量自动适配：
+
+```css
+:root {
+  --shiki-color-background: #ffffff;
+  --shiki-color-foreground: #24292e;
+}
+
+.dark {
+  --shiki-color-background: #1a1a2e;
+  --shiki-color-foreground: #e6e6e6;
+}
+```
+
+---
+
+## 项目地址
+
+**开源仓库**：[github.com/8BitcloudBot/portfolio](https://github.com/8BitcloudBot/portfolio)
+
+**在线预览**：
+- 生产环境：[vincentbuilds.fun](https://vincentbuilds.fun)
+- GitHub Pages：[8bitcloudbot.github.io/portfolio](https://8bitcloudbot.github.io/portfolio)
+
+欢迎 Star、Issue 和 PR。

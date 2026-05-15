@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/icons/Icon.astro';
+import { SITE } from '../config';
+---
+
+<BaseLayout title="About | Vincent Hu" description="About me.">
+  <div class="max-w-prose mx-auto animate-slide-enter">
+    <h1 class="text-3xl font-bold font-condensed mb-6">About Me</h1>
+
+    <div class="prose-custom">
+      <p>
+        Hey! I'm <strong> Vincent Hu </strong>, a passionate developer who loves building things for the web.
+      </p>
+      <p>
+        I enjoy exploring new technologies, solving problems, and sharing what I learn with the community.
+        This site is where I document my journey — blog posts, projects, and thoughts on software development.
+      </p>
+      <p>
+        Outside of programming, I enjoy reading, gaming, and exploring new things.
+      </p>
+    </div>
+
+    <div class="mt-10">
+      <h2 class="text-xl font-bold font-condensed mb-4 opacity-60">Find me on</h2>
+      <div class="flex items-center gap-4">
+        {SITE.social.map((item) => (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={item.name}
+            class="opacity-50 hover:opacity-100 transition-opacity duration-200 text-xl"
+          >
+            <Icon name={item.icon.toLowerCase()} />
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

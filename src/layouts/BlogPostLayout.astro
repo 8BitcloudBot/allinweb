@@ -1,0 +1,42 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  description?: string;
+  tags?: string[];
+  readingTime?: number;
+  lang?: string;
+}
+
+const { title, date, description, tags = [], readingTime, lang = 'zh' } = Astro.props;
+
+const formattedDate = date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout title={`${title} | Vincent Hu`} description={description} article={true} pubDate={date}>
+  <article class="max-w-prose mx-auto animate-slide-enter">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold font-condensed mb-3">{title}</h1>
+      <div class="flex items-center gap-3 text-sm opacity-50">
+        <time datetime={date.toISOString()}>{formattedDate}</time>
+        {readingTime && <span>{readingTime} min read</span>}
+        {tags.length > 0 && (
+          <div class="flex gap-2">
+            {tags.map((tag) => (
+              <span class="border border-current rounded px-1.5 py-0.5 text-xs">{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </header>
+    <div class="prose-custom">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>

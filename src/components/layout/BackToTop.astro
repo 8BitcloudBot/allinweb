@@ -1,0 +1,37 @@
+---
+import Icon from '../icons/Icon.astro';
+---
+
+<button
+  id="back-to-top"
+  title="Scroll to top"
+  class="fixed right-3 bottom-3 w-10 h-10 rounded-full hover:bg-gray-500/10 transition duration-300 z-100 print:hidden opacity-0 pointer-events-none"
+>
+  <Icon name="arrowUp" class="text-lg" />
+</button>
+
+<script>
+  const btn = document.getElementById('back-to-top');
+  if (btn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        btn.classList.remove('opacity-0', 'pointer-events-none');
+        btn.classList.add('opacity-30');
+      } else {
+        btn.classList.add('opacity-0', 'pointer-events-none');
+        btn.classList.remove('opacity-30');
+      }
+    });
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    btn.addEventListener('mouseenter', () => {
+      btn.classList.remove('opacity-30');
+      btn.classList.add('opacity-100');
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.classList.remove('opacity-100');
+      btn.classList.add('opacity-30');
+    });
+  }
+</script>

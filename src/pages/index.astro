@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/icons/Icon.astro';
+import { SITE } from '../config';
+import { getCollection } from 'astro:content';
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+const blogPosts = await getCollection('blog');
+const projects = await getCollection('projects');
+
+const recentPosts = blogPosts
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+
+const recentProjects = projects
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+
+const stats = [
+  { label: 'Posts', value: String(blogPosts.length).padStart(2, '0') },
+  { label: 'Projects', value: String(projects.length).padStart(2, '0') },
+  { label: 'Focus', value: 'Web' },
+];
+---
+
+<BaseLayout title={SITE.title} description={SITE.description}>
+  <div class="mx-auto flex max-w-5xl flex-col gap-8">
+    <section class="hero-panel animate-slide-enter overflow-hidden rounded-[2rem] border border-black/8 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-white/10 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-10">
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-mono tracking-[0.22em] text-primary-deep dark:text-primary-mist">
+        HELLO, I'M
+      </div>
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
+        <div>
+          <h1 class="mb-6 max-w-3xl text-5xl font-bold font-condensed tracking-tight md:text-7xl">
+            Vincent Hu
+          </h1>
+          <p class="max-w-2xl text-lg leading-8 opacity-72 md:text-xl">
+            A passionate developer who loves building things for the web.
+            Exploring technologies, writing code, and sharing what I learn.
+          </p>
+          <div class="mt-8 flex flex-wrap items-center gap-3">
+            <a href={`${base}blog`} class="notion-btn notion-btn-primary no-underline!">
+              Read the blog
+            </a>
+            <a href={`${base}projects`} class="notion-btn notion-btn-secondary no-underline!">
+              Browse projects
+            </a>
+            <a href={`${base}about`} class="notion-btn notion-btn-secondary no-underline!">
+              About me
+            </a>
+          </div>
+          <div class="mt-8 flex items-center gap-4">
+            <span class="text-sm font-mono tracking-[0.18em] opacity-35">ELSEWHERE</span>
+            <div class="h-px w-12 bg-black/10 dark:bg-white/10"></div>
+            <div class="flex items-center gap-3">
+              {SITE.social.map((item) => (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={item.name}
+                  class="flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-white/65 text-lg opacity-100 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary-dark dark:border-white/10 dark:bg-white/5 dark:hover:text-primary-mist"
+                >
+                  <Icon name={item.icon.toLowerCase()} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-3">
+          {stats.map((stat) => (
+            <div class="rounded-3xl border border-black/8 bg-white/55 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.04]">
+              <div class="text-xs font-mono tracking-[0.18em] opacity-38">{stat.label}</div>
+              <div class="mt-2 text-3xl font-condensed font-bold opacity-88">{stat.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="content-panel animate-slide-enter rounded-[1.75rem] p-6 md:p-7" style="animation-delay: 100ms;">
+      <div class="mb-5 flex items-baseline justify-between">
+        <h2 class="section-kicker">Projects</h2>
+        <a href={`${base}projects`} class="text-sm opacity-40 hover:opacity-100 transition-opacity duration-200 no-underline!">
+          View all &rarr;
+        </a>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3">
+        {recentProjects.map((project) => {
+          const articleHref = `${base}projects/${project.id}`;
+          const demoUrl = project.data.url
+            ? (project.data.url.startsWith('/') ? `${base}${project.data.url.slice(1)}` : project.data.url)
+            : '';
+          return (
+          <div           class="notion-card">
+            <div class="flex items-start justify-between gap-3">
+              <a href={articleHref} class="min-w-0 flex-1 no-underline!">
+                <h3 class="font-semibold text-lg group-hover:text-primary-dark transition-colors duration-200">{project.data.title}</h3>
+              </a>
+              <div class="flex shrink-0 gap-1.5">
+                {project.data.github && (
+                  <a href={project.data.github} target="_blank" rel="noopener noreferrer" class="rounded-full border border-black/8 px-2.5 py-1 text-xs opacity-45 no-underline! transition-all duration-200 hover:opacity-100 dark:border-white/10">
+                    GitHub
+                  </a>
+                )}
+                {!project.data.github && (
+                  <span class="rounded-full border border-black/8 px-2.5 py-1 text-xs opacity-20 cursor-not-allowed dark:border-white/10">
+                    GitHub
+                  </span>
+                )}
+                {demoUrl && (
+                  <a href={demoUrl} class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-600 no-underline! transition-all duration-200 hover:bg-emerald-500/20 dark:text-emerald-400">
+                    Demo
+                  </a>
+                )}
+              </div>
+            </div>
+            <a href={articleHref} class="mt-3 block no-underline!">
+              <p class="text-sm leading-6 opacity-58">{project.data.description}</p>
+              <div class="mt-4 flex flex-wrap gap-2">
+                {project.data.tags.slice(0, 3).map((tag) => (
+                  <span class="rounded-full bg-black/[0.04] px-2.5 py-1 text-xs opacity-55 dark:bg-white/[0.06]">{tag}</span>
+                ))}
+              </div>
+            </a>
+          </div>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="content-panel animate-slide-enter rounded-[1.75rem] p-6 md:p-7" style="animation-delay: 200ms;">
+      <div class="mb-5 flex items-baseline justify-between">
+        <h2 class="section-kicker">Recent Posts</h2>
+        <a href={`${base}blog`} class="text-sm opacity-40 hover:opacity-100 transition-opacity duration-200 no-underline!">
+          View all &rarr;
+        </a>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {recentPosts.map((post) => {
+          const formattedDate = post.data.pubDate.toLocaleDateString(post.data.lang === 'zh' ? 'zh-CN' : 'en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+          return (
+            <a
+              href={`${base}blog/${post.id}`}
+              class="notion-card no-underline!"
+            >
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                {post.data.tags.slice(0, 2).map((tag) => (
+                  <span class="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-xs opacity-55 dark:bg-white/[0.06]">{tag}</span>
+                ))}
+              </div>
+              <h3 class="font-semibold group-hover:text-primary-dark transition-colors duration-200">{post.data.title}</h3>
+              <p class="mt-2 text-sm leading-6 opacity-58 line-clamp-2">{post.data.description}</p>
+              <div class="mt-4 flex items-center gap-3 text-xs opacity-40">
+                <span>{formattedDate}</span>
+                {post.data.readingTime && <span>{post.data.readingTime} min</span>}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="content-panel animate-slide-enter rounded-[1.75rem] p-6 md:p-7" style="animation-delay: 300ms;">
+      <div class="mb-5 flex items-baseline justify-between">
+        <h2 class="section-kicker">About</h2>
+        <a href={`${base}about`} class="text-sm opacity-40 hover:opacity-100 transition-opacity duration-200 no-underline!">
+          Read more &rarr;
+        </a>
+      </div>
+      <div class="grid gap-5 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+        <p class="max-w-2xl opacity-58 leading-8">
+          I enjoy exploring new technologies, solving problems, and sharing what I learn with the community.
+          This site is where I document my journey.
+        </p>
+        <div class="rounded-[1.4rem] border border-black/8 bg-white/62 p-4 text-sm leading-7 opacity-70 dark:border-white/10 dark:bg-white/[0.04]">
+          Building in public, collecting notes, and keeping a small digital garden that grows with each project.
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

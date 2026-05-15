@@ -1,0 +1,39 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  href: string;
+  date: Date;
+  readingTime?: number;
+  lang?: string;
+  tags?: string[];
+}
+
+const { title, description, href, date, readingTime, lang = 'zh', tags = [] } = Astro.props;
+
+const formattedDate = date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<a
+  href={href}
+  class="notion-card no-underline!"
+>
+  <div class="flex flex-wrap gap-1.5 mb-3">
+    {tags.slice(0, 3).map((tag) => (
+      <span class="rounded-full bg-black/[0.04] px-2.5 py-0.5 text-xs opacity-55 dark:bg-white/[0.06]">{tag}</span>
+    ))}
+    {lang === 'en' && (
+      <span class="rounded-full border border-current px-2.5 py-0.5 text-xs opacity-40">EN</span>
+    )}
+  </div>
+  <h3 class="font-semibold group-hover:text-primary-dark transition-colors duration-200 leading-6">{title}</h3>
+  <p class="mt-2 text-sm leading-6 opacity-58 line-clamp-3">{description}</p>
+  <div class="mt-4 flex items-center gap-3 text-xs opacity-40">
+    <span>{formattedDate}</span>
+    {readingTime && <span>{readingTime} min</span>}
+  </div>
+</a>

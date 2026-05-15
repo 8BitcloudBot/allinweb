@@ -1,0 +1,448 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="ChefMate | Vincent Hu" description="智能食谱问答系统 — RAG 技术演示">
+  <div class="mx-auto flex max-w-5xl flex-col gap-8">
+    <!-- Header -->
+    <div class="hero-panel animate-slide-enter overflow-hidden rounded-[2rem] border border-black/8 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-white/10 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-7">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/8 px-2.5 py-0.5 text-xs font-mono tracking-[0.22em] text-amber-700 dark:text-amber-300">RAG DEMO</span>
+        <span class="text-xs opacity-35">DeepSeek V4 · FAISS · BM25 混合检索</span>
+      </div>
+      <div class="grid gap-5 lg:grid-cols-[auto_1fr] lg:items-center">
+        <h1 class="text-3xl font-bold font-condensed tracking-tight md:text-4xl shrink-0">ChefMate</h1>
+        <div class="text-sm leading-6 opacity-55 lg:border-l lg:border-black/10 lg:pl-5 dark:lg:border-white/10">
+          基于 RAG 的食谱问答系统，输入菜名获取分步烹饪指导。<br class="hidden sm:block" />
+          <span class="opacity-40 text-xs mt-1 block">API 由笔者自费提供，请勿频繁调用。检索偶有偏差，答案仅供参考。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content: 2/3 chat + 1/3 suggested queries & metrics -->
+    <div id="chefmate-app" class="animate-slide-enter" style="animation-delay: 100ms;">
+      <div class="grid gap-6 lg:grid-cols-[2fr_1fr] items-start">
+        <!-- Left: Chat area (2/3) -->
+        <div class="flex flex-col gap-4">
+          <div id="chat-messages" class="flex flex-col gap-5 h-[480px] overflow-y-auto rounded-[1.75rem] border border-black/8 bg-white/52 p-6 dark:border-white/10 dark:bg-white/[0.03]">
+            <div class="flex items-start gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-base dark:bg-amber-500/20">🧑‍🍳</div>
+              <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content">
+                你好！我是 <strong>ChefMate</strong>，你的智能食谱助手。<br/>试试问我「<strong>宫保鸡丁怎么做</strong>」或者「<strong>推荐两个素菜</strong>」吧。
+              </div>
+            </div>
+          </div>
+
+          <form id="chat-form" class="flex gap-3">
+            <input
+              id="chat-input"
+              type="text"
+              placeholder="输入你想做的菜，例如：宫保鸡丁怎么做"
+              class="flex-1 rounded-xl border border-black/8 bg-white/62 px-5 py-3 text-sm outline-none transition-all duration-200 placeholder:opacity-35 focus:border-primary/40 focus:shadow-[0_0_0_3px_rgba(86,69,212,0.12)] dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-primary-mist/40"
+            />
+            <button
+              type="submit"
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-lg transition-all duration-200 hover:bg-primary-dark hover:shadow-[0_4px_12px_rgba(86,69,212,0.3)] disabled:opacity-40"
+              id="chat-send"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Suggested queries + status indicator -->
+        <div class="flex flex-col gap-4">
+          <div class="h-[480px] flex flex-col rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+            <h3 class="text-xs font-mono tracking-[0.18em] opacity-35 mb-3 shrink-0">PROMPTS</h3>
+            <div class="flex-1 space-y-2.5 overflow-hidden">
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="宫保鸡丁怎么做">
+                <span class="font-medium opacity-70">宫保鸡丁怎么做</span>
+                <span class="opacity-30 ml-1.5">步骤教学</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="推荐几个素菜">
+                <span class="font-medium opacity-70">推荐几个素菜</span>
+                <span class="opacity-30 ml-1.5">列表推荐</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="推荐3个简单的素菜，适合5个人吃">
+                <span class="font-medium opacity-70">推荐3个简单的素菜，适合5个人吃</span>
+                <span class="opacity-30 ml-1.5">份量感知</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="用鸡蛋能做什么菜">
+                <span class="font-medium opacity-70">用鸡蛋能做什么菜</span>
+                <span class="opacity-30 ml-1.5">食材查询</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="夏天适合吃什么菜">
+                <span class="font-medium opacity-70">夏天适合吃什么菜</span>
+                <span class="opacity-30 ml-1.5">场景推荐</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="没有淀粉可以用什么代替">
+                <span class="font-medium opacity-70">没有淀粉可以用什么代替</span>
+                <span class="opacity-30 ml-1.5">通用问答</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="适合两个人吃的菜">
+                <span class="font-medium opacity-70">适合两个人吃的菜</span>
+                <span class="opacity-30 ml-1.5">小份量</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-primary/30 hover:bg-primary/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-primary-mist/30 dark:hover:bg-primary/[0.05]" data-query="推荐几个下饭菜">
+                <span class="font-medium opacity-70">推荐几个下饭菜</span>
+                <span class="opacity-30 ml-1.5">场景推荐</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="metrics-status" class="rounded-xl border border-black/10 bg-black/[0.03] px-3 py-3 text-xs leading-relaxed opacity-55 dark:border-white/10 dark:bg-white/[0.04]">
+            <span id="status-text">检索分析结果在页面下方生成</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics panel: full-width below both columns -->
+      <div id="metrics-panel" class="mt-6 rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+        <h3 class="text-xs font-mono tracking-[0.18em] opacity-35 mb-4">RAG METRICS</h3>
+        <div id="metrics-content" class="grid gap-4 lg:grid-cols-3">
+          <div class="text-sm opacity-40 col-span-full">等待查询...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<tooltip-display id="chefmate-tooltip" class="tooltip-host">
+</tooltip-display>
+
+<style>
+  .msg-content h1 { font-size: 1.1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
+  .msg-content h2 { font-size: 1rem; font-weight: 650; margin: 0.5em 0 0.25em; padding-bottom: 0.2em; border-bottom: 1px solid rgb(0 0 0 / 0.06); }
+  .dark .msg-content h2 { border-bottom-color: rgb(255 255 255 / 0.06); }
+  .msg-content h3 { font-size: 0.95rem; font-weight: 600; margin: 0.4em 0 0.2em; }
+  .msg-content p { margin: 0.5em 0; }
+  .msg-content strong { font-weight: 650; }
+  .msg-content em { font-style: italic; }
+  .msg-content ol { padding-left: 1.5em; margin: 0.4em 0; }
+  .msg-content ul { padding-left: 1.5em; margin: 0.4em 0; }
+  .msg-content li { margin: 0.25em 0; }
+  .msg-content li::marker { color: var(--color-primary); opacity: 0.5; }
+  .msg-content hr { border: 0; height: 1px; background: rgb(0 0 0 / 0.06); margin: 0.8em 0; }
+  .dark .msg-content hr { background: rgb(255 255 255 / 0.06); }
+  .msg-content code { font-family: 'DM Mono', monospace; font-size: 0.82em; background: rgb(0 0 0 / 0.04); padding: 0.1em 0.35em; border-radius: 3px; }
+  .dark .msg-content code { background: rgb(255 255 255 / 0.08); }
+  .msg-content pre { background: rgb(0 0 0 / 0.04); padding: 0.6em 0.8em; border-radius: 6px; overflow-x: auto; margin: 0.5em 0; font-size: 0.8em; line-height: 1.4; }
+  .dark .msg-content pre { background: rgb(255 255 255 / 0.06); }
+  .msg-content pre code { background: transparent; padding: 0; }
+  .msg-content blockquote { border-left: 2px solid var(--color-primary); padding-left: 0.8em; margin: 0.5em 0; opacity: 0.75; }
+  .msg-content table { width: 100%; border-collapse: collapse; margin: 0.5em 0; font-size: 0.85em; }
+  .msg-content th { text-align: left; font-weight: 600; padding: 0.3em 0.5em; border-bottom: 1px solid rgb(0 0 0 / 0.08); }
+  .dark .msg-content th { border-bottom-color: rgb(255 255 255 / 0.08); }
+  .msg-content td { padding: 0.3em 0.5em; border-bottom: 1px solid rgb(0 0 0 / 0.04); }
+  .dark .msg-content td { border-bottom-color: rgb(255 255 255 / 0.04); }
+
+  .info-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.3;
+    cursor: help;
+    transition: opacity 0.15s;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .info-dot svg { pointer-events: none; width: 10px; height: 10px; }
+  .info-dot:hover { opacity: 0.6; }
+
+  .score-bar {
+    display: flex;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: rgb(0 0 0 / 0.05);
+  }
+  .dark .score-bar { background: rgb(255 255 255 / 0.05); }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .score-bar-vec { background: var(--color-primary); }
+  .score-bar-bm25 { background: #f59e0b; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+
+<script>
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+  const messages = document.getElementById('chat-messages');
+  const sendBtn = document.getElementById('chat-send');
+  const metricsContent = document.getElementById('metrics-content');
+  const statusText = document.getElementById('status-text');
+
+  function updateStatus(state) {
+    if (!statusText) return;
+    const el = document.getElementById('metrics-status');
+    if (state === 'loading') {
+      statusText.textContent = '正在检索分析…';
+      el.style.opacity = '0.75';
+    } else if (state === 'ready') {
+      statusText.textContent = '检索分析结果已生成 ↓';
+      el.style.opacity = '0.8';
+    } else {
+      statusText.textContent = '检索分析结果在页面下方生成';
+      el.style.opacity = '0.55';
+    }
+  }
+
+  // ─── Tooltip system (JS-based, bypasses Astro scoping issues) ───
+  let activeTooltip = null;
+
+  function createTooltip(text) {
+    const tip = document.createElement('div');
+    tip.className = 'tooltip-popup';
+    tip.textContent = text;
+    tip.style.cssText = `
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: rgb(30 30 35); color: #fff;
+      font-size: 11px; font-weight: 400; line-height: 1.45;
+      max-width: 200px; padding: 6px 10px; border-radius: 6px;
+      text-align: center; opacity: 0;
+      transition: opacity 0.15s;
+    `;
+    document.body.appendChild(tip);
+
+    // Arrow
+    const arrow = document.createElement('div');
+    arrow.style.cssText = `
+      position: fixed; z-index: 9999; pointer-events: none;
+      width: 0; height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid rgb(30 30 35);
+      opacity: 0; transition: opacity 0.15s;
+    `;
+    document.body.appendChild(arrow);
+
+    // Dark mode support
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      tip.style.background = '#e8e8e8';
+      tip.style.color = '#1a1a1a';
+      arrow.style.borderTopColor = '#e8e8e8';
+    }
+
+    return { tip, arrow };
+  }
+
+  function positionTooltip(tt, el) {
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const top = rect.top - 8;
+
+    tt.tip.style.left = cx + 'px';
+    tt.tip.style.bottom = (window.innerHeight - top) + 'px';
+    tt.tip.style.transform = 'translate(-50%, -100%)';
+
+    tt.arrow.style.left = cx + 'px';
+    tt.arrow.style.bottom = (window.innerHeight - top + 4) + 'px';
+    tt.arrow.style.transform = 'translateX(-50%)';
+  }
+
+  function showTooltip(el) {
+    const title = el.getAttribute('data-title');
+    if (!title) return;
+    if (activeTooltip) hideTooltip();
+    activeTooltip = createTooltip(title);
+    positionTooltip(activeTooltip, el);
+    requestAnimationFrame(() => {
+      if (activeTooltip) {
+        activeTooltip.tip.style.opacity = '1';
+        activeTooltip.arrow.style.opacity = '1';
+      }
+    });
+  }
+
+  function hideTooltip() {
+    if (activeTooltip) {
+      activeTooltip.tip.remove();
+      activeTooltip.arrow.remove();
+      activeTooltip = null;
+    }
+  }
+
+  document.addEventListener('mouseover', (e) => {
+    const dot = e.target.closest('.info-dot');
+    if (dot && dot.getAttribute('data-title')) {
+      showTooltip(dot);
+    }
+  }, true);
+
+  document.addEventListener('mouseout', (e) => {
+    const dot = e.target.closest('.info-dot');
+    if (dot) hideTooltip();
+  }, true);
+
+  // Cleanup on mutation (when metrics panel is replaced)
+  const metricsObserver = new MutationObserver(() => {
+    hideTooltip();
+  });
+  metricsObserver.observe(metricsContent, { childList: true, subtree: true });
+
+  // ─── Suggested queries ───
+  document.querySelectorAll('.prompt-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      if (q) {
+        input.value = q;
+        // Shake animation instead of auto-submit (user-friendly)
+        input.classList.add('ring-2', 'ring-primary/40');
+        setTimeout(() => input.classList.remove('ring-2', 'ring-primary/40'), 600);
+        input.focus();
+      }
+    });
+  });
+
+  // ─── Chat ───
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function renderMarkdown(text) {
+    if (typeof marked !== 'undefined') {
+      return marked.parse(text);
+    }
+    return text.replace(/\n/g, '<br/>');
+  }
+
+  function addMessage(role, content, html = false) {
+    const div = document.createElement('div');
+    const isUser = role === 'user';
+
+    if (isUser) {
+      div.className = 'flex items-start gap-3 justify-end';
+      div.innerHTML =
+        `<div class="rounded-2xl rounded-tr-md bg-primary px-4 py-3 text-sm leading-relaxed text-white max-w-[85%]">${escapeHtml(content)}</div>
+         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-base dark:bg-primary/20">👤</div>`;
+    } else {
+      div.className = 'flex items-start gap-3';
+      div.innerHTML =
+        `<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-base dark:bg-amber-500/20">🧑‍🍳</div>
+         <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] max-w-[85%] msg-content">${html ? content : escapeHtml(content)}</div>`;
+    }
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function updateMetrics(metrics) {
+    if (!metrics) return;
+    let sourcesHtml = '';
+    if (metrics.sources && metrics.sources.length) {
+      sourcesHtml = metrics.sources.map(s => {
+        const vp = Math.round((s.vec_score || 0) * 100);
+        const bp = Math.round((s.bm25_score || 0) * 100);
+        return `<div class="rounded-xl border border-black/6 bg-black/[0.02] p-3 dark:border-white/8 dark:bg-white/[0.02]">
+           <div class="flex items-center justify-between mb-2">
+             <span class="text-sm font-medium">${escapeHtml(s.dish_name || '')}</span>
+             <span class="text-xs opacity-35">${escapeHtml(s.category || '')}</span>
+           </div>
+           <div class="space-y-1.5">
+             <div class="flex items-center justify-between text-xs opacity-45">
+               <span>语义匹配</span>
+               <span class="font-mono">${vp}%</span>
+             </div>
+             <div class="score-bar"><div class="score-bar-fill score-bar-vec" style="width:${vp}%"></div></div>
+             <div class="flex items-center justify-between text-xs opacity-45">
+               <span>关键词匹配</span>
+               <span class="font-mono">${bp > 0 ? bp + '%' : 'N/A'}</span>
+             </div>
+             <div class="score-bar"><div class="score-bar-fill score-bar-bm25" style="width:${Math.max(bp, 2)}%"></div></div>
+             <div class="text-xs opacity-30 mt-1">命中 ${s.match_count || 0} 个子块</div>
+           </div>
+         </div>`;
+      }).join('');
+    }
+    metricsContent.innerHTML = `
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
+          <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
+            路由类型
+            <span class="info-dot inline-flex" data-title="系统自动判断的查询类型：详细指导=步骤教学，列表推荐=菜品列表，通用问答=知识解答">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+          </div>
+          <div class="text-sm font-medium">${metrics.query?.route_type || '—'}</div>
+        </div>
+        ${metrics.elapsed_ms ? `<div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
+          <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
+            耗时
+            <span class="info-dot inline-flex" data-title="从接收问题到返回答案的端到端时间，包含检索和 LLM 生成">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+          </div>
+          <div class="text-sm font-mono font-medium">${metrics.elapsed_ms}ms</div>
+        </div>` : ''}
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
+          <div class="text-[10px] opacity-35 mb-1.5">检索命中</div>
+          <div class="text-sm font-mono font-medium">${metrics.sources?.length || 0} 菜谱</div>
+        </div>
+        ${sourcesHtml ? `<div class="col-span-full mt-2">
+          <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-2">
+            检索来源 · 发送给 LLM 的菜谱
+            <span class="info-dot inline-flex" data-title="RAG 检索到的相关菜谱，按综合得分从高到低排列。紫色=语义向量匹配，橙色=关键词BM25匹配（中文查询通常为N/A），命中子块数=该菜谱有多少片段被送入 LLM">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+          </div>
+          <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            ${sourcesHtml}
+          </div>
+        </div>` : ''}
+    `;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+
+    addMessage('user', query);
+    input.value = '';
+    sendBtn.disabled = true;
+    updateStatus('loading');
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'flex items-start gap-3';
+    loadingDiv.innerHTML = `<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-base dark:bg-amber-500/20">🧑‍🍳</div>
+      <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm dark:bg-white/[0.05]">
+        <span class="opacity-40">思考中<span class="animate-pulse">...</span></span>
+      </div>`;
+    messages.appendChild(loadingDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      loadingDiv.remove();
+      addMessage('assistant', renderMarkdown(data.answer || ''), true);
+      if (data.metrics) {
+        updateMetrics(data.metrics);
+        updateStatus('ready');
+      } else {
+        metricsContent.innerHTML = '<div class="text-sm opacity-40 col-span-full">等待查询...</div>';
+        updateStatus('idle');
+      }
+    } catch (err) {
+      loadingDiv.remove();
+      addMessage('assistant', '❌ 请求失败: ' + err.message);
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+</script>

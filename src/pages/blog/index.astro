@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogList from '../../components/blog/BlogList.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog');
+---
+
+<BaseLayout title="Blog | Vincent Hu" description="Blog posts about coding, open source, and more.">
+  <BlogList posts={posts} />
+</BaseLayout>

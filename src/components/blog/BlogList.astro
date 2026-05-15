@@ -1,0 +1,28 @@
+---
+import BlogItem from './BlogItem.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  posts: CollectionEntry<'blog'>[];
+}
+
+const { posts } = Astro.props;
+
+const sorted = posts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+---
+
+<div class="animate-slide-enter">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {sorted.map((post) => (
+      <BlogItem
+        title={post.data.title}
+        description={post.data.description}
+        href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/blog/${post.id}`}
+        date={post.data.pubDate}
+        readingTime={post.data.readingTime}
+        lang={post.data.lang}
+        tags={post.data.tags}
+      />
+    ))}
+  </div>
+</div>
