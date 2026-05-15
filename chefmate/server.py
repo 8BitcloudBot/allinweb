@@ -12,6 +12,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
 
 from config import DEFAULT_CONFIG
 from chefmate.security import ChatRequest, check_quota, query_hash
@@ -77,13 +80,23 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="ChefMate API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[
+        "https://vincentbuilds.fun",
+        "https://www.vincentbuilds.fun",
+        "http://localhost:4321",
+        "http://localhost:3000",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["30/minute"])
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 
 @app.post("/api/chat")
+@limiter.limit("10/minute")
 async def chat(body: ChatRequest, request: Request):
     check_quota(request)
     t0 = time.time()
