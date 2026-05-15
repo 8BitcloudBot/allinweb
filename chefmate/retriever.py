@@ -93,14 +93,15 @@ class RetrievalOptimizationModule:
     def get_scores_for_docs(
         self, query: str, docs: List[Document]
     ) -> Dict[int, Tuple[str, float]]:
-        score_k = max(len(docs) * 3, 20)
+        score_k = max(len(self.chunks), 50)
         vec_scored = self.vectorstore.similarity_search_with_relevance_scores(
             query, k=score_k
         )
         vec_score_map = {}
         for doc, score in vec_scored:
             cid = doc.metadata.get("chunk_id", "")
-            vec_score_map[cid] = max(0.0, min(1.0, float(score)))
+            if cid:
+                vec_score_map[cid] = max(0.0, min(1.0, float(score)))
 
         raw_bm25 = self._bm25_index.get_scores(query.split())
         bm25_scores_norm = self._normalize_scores(raw_bm25)
@@ -111,7 +112,9 @@ class RetrievalOptimizationModule:
 
         chunk_scores: Dict[int, Tuple[str, float]] = {}
         for doc in docs:
-            cid = doc.metadata.get("chunk_id", str(id(doc)))
+            cid = doc.metadata.get("chunk_id", "")
+            if not cid:
+                continue
             parent_id = doc.metadata.get("parent_id", "")
             vec = vec_score_map.get(cid, 0.0)
             bm25 = bm25_score_map.get(cid, 0.0)

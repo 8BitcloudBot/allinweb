@@ -56,15 +56,18 @@ class IndexConstructionModule:
         self.vectorstore.save_local(self.index_save_path)
 
     def load_index(self) -> Optional[FAISS]:
-        if not Path(self.index_save_path).exists():
+        if not (Path(self.index_save_path) / "index.faiss").exists():
             return None
 
-        self.vectorstore = FAISS.load_local(
-            self.index_save_path,
-            self.embeddings,
-            allow_dangerous_deserialization=True,
-        )
-        return self.vectorstore
+        try:
+            self.vectorstore = FAISS.load_local(
+                self.index_save_path,
+                self.embeddings,
+                allow_dangerous_deserialization=True,
+            )
+            return self.vectorstore
+        except Exception:
+            return None
 
     def index_exists(self) -> bool:
         return (Path(self.index_save_path) / "index.faiss").exists()
