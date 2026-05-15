@@ -1,4 +1,4 @@
-name: Deploy Frontend + Backend
+name: Deploy
 
 on:
   push:
@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build-frontend:
@@ -35,28 +33,32 @@ jobs:
           name: dist
           path: dist
 
+      - name: Debug secrets
+        run: |
+          if [ -z "${{ secrets.ALIYUN_SERVER_HOST }}" ]; then
+            echo "ERROR: ALIYUN_SERVER_HOST is empty"
+            exit 1
+          fi
+          echo "Host set: ${{ secrets.ALIYUN_SERVER_HOST }}"
+
       - name: Deploy to Alibaba Cloud
-        env:
-          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
-          HOST: ${{ secrets.ALIYUN_SERVER_HOST }}
-          USER: ${{ secrets.ALIYUN_SERVER_USER }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          echo '${{ secrets.ALIYUN_SSH_KEY }}' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+          ssh-keyscan -H '${{ secrets.ALIYUN_SERVER_HOST }}' >> ~/.ssh/known_hosts
 
-          # 1. Deploy frontend (static files)
-          tar czf - --no-xattrs -C dist . | ssh $USER@$HOST "tar xzf - -C /var/www/vincentbuilds"
+          # 1. Deploy frontend
+          tar czf - --no-xattrs -C dist . | ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "tar xzf - -C /var/www/vincentbuilds"
 
-          # 2. Copy backend source
+          # 2. Copy backend
           rsync -avz --exclude 'node_modules' --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
-            chefmate/ main.py config.py pyproject.toml uv.lock Dockerfile docker-compose.yml .env \
+            chefmate/ main.py config.py pyproject.toml uv.lock Dockerfile docker-compose.yml \
             data/ vector_index/ \
-            $USER@$HOST:/var/www/vincentbuilds-api/
+            '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}:/var/www/vincentbuilds-api/'
 
-          # 3. Rebuild & restart backend
-          ssh $USER@$HOST "cd /var/www/vincentbuilds-api && docker compose up -d --build"
+          # 3. Restart backend
+          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "cd /var/www/vincentbuilds-api && docker compose up -d --build"
 
           # 4. Reload nginx
-          ssh $USER@$HOST "sudo systemctl reload nginx"
+          ssh '${{ secrets.ALIYUN_SERVER_USER }}@${{ secrets.ALIYUN_SERVER_HOST }}' "sudo systemctl reload nginx"
