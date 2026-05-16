@@ -10,7 +10,8 @@ export const SITE = {
   nav: [
     { name: "Blog", path: `${base}blog`, icon: "article" },
     { name: "Projects", path: `${base}projects`, icon: "lightbulb" },
-    { name: "ChefMate", path: `${base}chefmate`, icon: "chefmate" },
+    { name: "ChefMate V2", path: `${base}chefmate-v2`, icon: "chefmate" },
+    { name: "ChefMate V1", path: `${base}chefmate`, icon: "chefmate" },
     { name: "Photos", path: `${base}photos`, icon: "image" },
     { name: "About", path: `${base}about`, icon: "user" },
   ],

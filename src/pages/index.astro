@@ -15,7 +15,7 @@ const recentPosts = blogPosts
 
 const recentProjects = projects
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
-  .slice(0, 3);
+  .slice(0, 4);
 
 const stats = [
   { label: 'Posts', value: String(blogPosts.length).padStart(2, '0') },
