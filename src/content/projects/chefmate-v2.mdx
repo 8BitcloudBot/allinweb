@@ -1,0 +1,80 @@
+---
+title: "ChefMate 改进版 — 图RAG 智能食谱问答系统"
+description: "基于 GraphRAG（图增强检索生成）的下一代智能食谱问答系统。Neo4j 知识图谱 + Milvus 向量检索 + 智能查询路由，解决传统 RAG 在复杂推理上的局限。"
+pubDate: 2026-05-16
+tags: ["GraphRAG", "Neo4j", "Milvus", "DeepSeek", "知识图谱"]
+github: "https://github.com/8BitcloudBot/ChefMate"
+---
+
+> **从 V1 到 V2 的架构演进**：将传统 RAG 升级为图增强检索生成（GraphRAG），引入 Neo4j 知识图谱和智能查询路由，使系统具备多跳推理和复杂关系查询能力。
+
+## 为什么需要图RAG？
+
+ChefMate V1 基于 FAISS + BM25 的混合检索，能处理"宫保鸡丁怎么做"这类直查。但面对复杂问题时捉襟见肘：
+
+| 问题类型 | 示例 | V1 局限 | V2 方案 |
+|---------|------|--------|---------|
+| 关系推理 | "哪些川菜用了鸡肉和花生" | 无法理解食材关系 | Neo4j 图遍历 |
+| 跨菜谱推理 | "有没有类似但更简单的菜" | 文本匹配不精确 | 知识图谱相似度 |
+| 多维筛选 | "减肥低脂高蛋白" | 向量语义有偏差 | 结构化属性过滤 |
+
+## 系统架构
+
+```
+用户查询
+  │
+  ├──► 智能查询路由 (LLM 分析复杂度/关系密集度/推理需求)
+  │     ├── 简单查找 (复杂度 < 0.4)  → 🔍 传统混合检索
+  │     ├── 中等复杂 (0.4-0.7)       → 🔄 组合策略
+  │     └── 复杂推理 (> 0.7)         → 🕸️ 图RAG 检索
+  │
+  ├──► 图RAG 检索引擎
+  │     ├── 图查询理解 (entity_relation / multi_hop / subgraph)
+  │     ├── 多跳遍历 (Neo4j Cypher, 最大深度 3 跳)
+  │     ├── 知识子图提取 (最大 100 节点)
+  │     └── 图结构推理 (推理链构建 + 可信度验证)
+  │
+  └──► LLM 生成 → 流式输出 → 指标可视化
+```
+
+## 降级策略
+
+```
+🕸️ 图RAG 检索 (高级) 
+  └── 失败 → 🔄 组合策略 (中级)
+       └── 失败 → 🔍 传统混合检索 (保底)
+            └── 失败 → ❌ 系统异常
+```
+
+## 知识图谱设计
+
+```
+(:Recipe {name, difficulty, cooking_time, cuisine})
+    └── [:USES] → (:Ingredient {name, category})
+    └── [:HAS_STEP] → (:CookingStep {description, method, tool})
+    └── [:SIMILAR_TO] → (:Recipe)
+    └── [:BELONGS_TO] → (:Category {name})
+```
+
+## 技术对比
+
+| 维度 | V1 | V2 |
+|------|-----|-----|
+| 向量检索 | FAISS (本地) | Milvus (分布式) |
+| 图数据库 | — | Neo4j 5.x |
+| 查询路由 | 简单 LLM 分类 | 多维智能分析 |
+| 推理能力 | 文本匹配 | 多跳推理 + 子图 |
+| 嵌入维度 | 384d | 512d |
+| 降级保护 | 无 | 三级降级 |
+
+## 开发计划
+
+- [x] 系统架构设计
+- [x] Neo4j 知识图谱 Schema
+- [ ] 后端 GraphRAG 引擎开发
+- [ ] 前端集成与部署
+- [ ] 性能测试与优化
+
+---
+
+**GitHub**：[8BitcloudBot/ChefMate](https://github.com/8BitcloudBot/ChefMate)
