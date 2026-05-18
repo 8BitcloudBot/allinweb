@@ -19,7 +19,34 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </div>
 
-    <!-- Main content: 2/3 chat + 1/3 suggested queries & metrics -->
+    <!-- Version Selector -->
+    <div class="animate-slide-enter grid gap-4 md:grid-cols-2" style="animation-delay: 50ms;">
+      <button id="tab-rag" class="version-tab group rounded-[1.4rem] border-2 border-amber-500/40 bg-amber-500/[0.06] p-5 cursor-pointer transition-all duration-200 hover:border-amber-500/60 hover:shadow-[0_8px_24px_rgba(245,158,11,0.12)]">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-xl">🔍</span>
+          <div class="text-left">
+            <div class="text-sm font-semibold opacity-80">ChefMate RAG</div>
+            <div class="text-[11px] opacity-35">FAISS + BM25 混合检索</div>
+          </div>
+          <span class="ml-auto rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-mono text-amber-700 dark:text-amber-300">在线可用</span>
+        </div>
+        <p class="text-xs opacity-45 leading-relaxed text-left">基于向量检索的传统 RAG，支持查询路由、多轮对话、份量感知。</p>
+      </button>
+      <button id="tab-graphrag" class="version-tab group rounded-[1.4rem] border-2 border-transparent bg-black/[0.02] p-5 cursor-pointer transition-all duration-200 hover:border-violet-500/40 dark:bg-white/[0.02]">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-xl">🕸️</span>
+          <div class="text-left">
+            <div class="text-sm font-semibold opacity-80">ChefMate GraphRAG</div>
+            <div class="text-[11px] opacity-35">Neo4j 知识图谱 + 智能路由</div>
+          </div>
+          <span class="ml-auto rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-mono text-emerald-700 dark:text-emerald-300">在线可用</span>
+        </div>
+        <p class="text-xs opacity-45 leading-relaxed text-left">引入 Neo4j 图数据库，支持多跳推理、子图提取与三级降级策略。</p>
+      </button>
+    </div>
+
+    <!-- RAG Demo (default) -->
+    <div id="demo-rag">
     <div id="chefmate-app" class="animate-slide-enter" style="animation-delay: 100ms;">
       <div class="grid gap-6 lg:grid-cols-[2fr_1fr] items-start">
         <!-- Left: Chat area (2/3) -->
@@ -29,9 +56,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-base dark:bg-amber-500/20">🧑‍🍳</div>
               <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content">
                 你好！我是 <strong>ChefMate</strong>，你的智能食谱助手。<br/>试试问我「<strong>宫保鸡丁怎么做</strong>」或者「<strong>推荐两个素菜</strong>」吧。
-              </div>
-            </div>
-          </div>
+      </div>
+    </div>
+    </div>
 
           <form id="chat-form" class="flex gap-3">
             <input
@@ -105,10 +132,101 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </div>
   </div>
+
+  <!-- GraphRAG Demo -->
+  <div id="demo-graphrag" style="display:none">
+    <div class="grid gap-4 lg:grid-cols-[2fr_1fr] items-start">
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-5 h-[480px] overflow-y-auto rounded-[1.75rem] border border-black/8 bg-white/52 p-6 dark:border-white/10 dark:bg-white/[0.03]">
+          <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-base dark:bg-violet-500/20">🕸️</div>
+            <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content">
+              你好！我是 <strong>ChefMate GraphRAG</strong>，基于知识图谱的智能食谱助手。<br/>
+              我能理解食材关系、发现相似菜品、进行多跳推理。<br/><br/>
+              试试问我「<strong>哪些川菜用了鸡肉和花生</strong>」或「<strong>有没有类似宫保鸡丁但更简单的</strong>」。
+            </div>
+          </div>
+        </div>
+        <form id="graphrag-form" class="flex gap-3" onsubmit="return false;">
+          <input id="graphrag-input" type="text" placeholder="试试多跳查询：「鸡肉配什么蔬菜」" class="flex-1 rounded-xl border border-black/8 bg-white/62 px-5 py-3 text-sm outline-none focus:border-violet-500/40 transition-colors" />
+          <button id="graphrag-send-btn" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </form>
+      </div>
+      <div class="flex flex-col gap-4">
+        <div class="rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+          <div class="flex items-center gap-1 mb-3">
+            <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50">STRATEGY</h3>
+            <span class="info-dot inline-flex" data-title="系统根据查询类型自动选择的检索策略。简单查询走传统混合检索（Milvus+BM25），关系推理走图RAG（Neo4j多跳遍历），复杂查询走组合策略"></span>
+          </div>
+          <div class="space-y-2">
+            <div data-strategy="hybrid_traditional" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🔍</span><div class="text-[11px] font-medium opacity-70">传统混合检索</div><span class="ml-auto text-[10px] font-mono opacity-30">简单</span><span class="info-dot inline-flex ml-1" data-title="仅使用向量+BM25关键词匹配，不涉及图数据库查询。适合菜谱搜索、做法指导、推荐查询。延迟低、结果稳定"></span></div>
+            <div data-strategy="combined" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🔄</span><div class="text-[11px] font-medium opacity-70">组合检索</div><span class="ml-auto text-[10px] font-mono opacity-30">中等</span><span class="info-dot inline-flex ml-1" data-title="同时执行传统混合检索和图RAG检索，通过RRF算法融合结果。适合多条件查询（如「哪些菜用了土豆又用了猪肉」）"></span></div>
+            <div data-strategy="graph_rag" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🕸️</span><div class="text-[11px] font-medium opacity-70">图 RAG 检索</div><span id="gs-reasoning" class="ml-auto text-[10px] font-mono opacity-20 invisible"></span><span class="info-dot inline-flex ml-1" data-title="在图数据库Neo4j中执行多跳遍历和子图提取，利用实体关系网络进行推理。适合食材搭配、食材替代、相似菜品等需要关系推理的查询"></span></div>
+          </div>
+        </div>
+        <div class="rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+          <div class="flex items-center gap-1 mb-3">
+            <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50">GRAPH</h3>
+            <span class="info-dot inline-flex" data-title="知识图谱可视化。紫色=菜谱节点，琥珀色=食材节点，翠绿色=分类节点。连线表示节点间的关系（实线=食材需求，虚线=分类归属，点线=烹饪步骤）"></span>
+          </div>
+          <div id="graph-canvas" class="rounded-xl border border-dashed border-black/10 bg-black/[0.01] px-3 py-4 dark:border-white/10 dark:bg-white/[0.01] min-h-[80px]">
+            <div class="flex flex-col items-center gap-2">
+              <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 rounded-full bg-violet-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-amber-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-emerald-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-rose-400"></div></div>
+<div class="text-[10px] text-black/55 dark:text-white/50">Neo4j · 362 菜谱 · 500+ 食材 · 3 跳推理</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Metrics below, full-width -->
+    <div class="mt-5 rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+      <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50 mb-3">RAG METRICS</h3>
+      <div class="grid gap-3 lg:grid-cols-4">
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">路由策略 <span class="info-dot inline-flex" data-title="本次查询实际使用的检索策略：hybrid_traditional=传统混合检索，graph_rag=图RAG检索，combined=组合策略，greeting=问候"></span></div><div id="gm-route-strategy" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">检索来源 <span class="info-dot inline-flex" data-title="结果的来源：milvus=向量检索，bm25=关键词匹配，graph_rag=图数据库遍历，combined=融合结果"></span></div><div id="gm-search-source" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">检索数量 <span class="info-dot inline-flex" data-title="从知识库中检索到的相关文档/路径数量。数量多表示查询覆盖范围广，但也可能引入噪声"></span></div><div id="gm-retrieval-count" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">延迟 <span class="info-dot inline-flex" data-title="端到端的处理时间（从接收查询到返回回答），包含检索+LLM生成。简单查询约2-5s，图谱查询约5-8s"></span></div><div id="gm-latency" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">子图节点 <span class="info-dot inline-flex" data-title="图RAG在Neo4j中遍历到的节点数量。节点越多表示知识网络中与查询相关的实体越丰富"></span></div><div id="gm-node-count" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">遍历深度 <span class="info-dot inline-flex" data-title="图遍历的最大跳数。深度=1表示直接邻居，深度=3表示通过3跳关系链找到的隐含关联"></span></div><div id="gm-depth" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">置信度 <span class="info-dot inline-flex" data-title="检索结果与查询的相关性综合评分（0-100%）。基于检索分数+路径评分计算"></span></div><div id="gm-confidence" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+        <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]"><div class="text-[10px] text-black/65 dark:text-white/60 mb-1">关系密集度 <span class="info-dot inline-flex" data-title="查询对实体间关系的依赖程度（0-1）。越高表示越需要图谱推理，越低表示更偏向简单信息查找"></span></div><div id="gm-intensity" class="text-sm font-medium text-black/80 dark:text-white/80">—</div></div>
+      </div>
+    </div>
+  </div>
 </BaseLayout>
 
 <tooltip-display id="chefmate-tooltip" class="tooltip-host">
 </tooltip-display>
+
+<style is:global>
+  .msg-content { line-height: 1.7; }
+  .msg-content h1 { font-size: 1.1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
+  .msg-content h2 { font-size: 1rem; font-weight: 650; margin: 0.5em 0 0.25em; padding-bottom: 0.2em; border-bottom: 1px solid rgb(0 0 0 / 0.06); }
+  .dark .msg-content h2 { border-bottom-color: rgb(255 255 255 / 0.06); }
+  .msg-content h3 { font-size: 0.95rem; font-weight: 600; margin: 0.4em 0 0.2em; }
+  .msg-content p { margin: 0.5em 0; }
+  .msg-content strong { font-weight: 650; }
+  .msg-content em { font-style: italic; }
+  .msg-content ol { padding-left: 1.5em; margin: 0.4em 0; }
+  .msg-content ul { padding-left: 1.5em; margin: 0.4em 0; }
+  .msg-content li { margin: 0.25em 0; }
+  .msg-content li::marker { color: var(--color-primary); opacity: 0.5; }
+  .msg-content hr { border: 0; height: 1px; background: rgb(0 0 0 / 0.06); margin: 0.8em 0; }
+  .dark .msg-content hr { background: rgb(255 255 255 / 0.06); }
+  .msg-content code { font-family: 'DM Mono', monospace; font-size: 0.82em; background: rgb(0 0 0 / 0.04); padding: 0.1em 0.35em; border-radius: 3px; }
+  .dark .msg-content code { background: rgb(255 255 255 / 0.08); }
+  .msg-content pre { background: rgb(0 0 0 / 0.04); padding: 0.6em 0.8em; border-radius: 6px; overflow-x: auto; margin: 0.5em 0; font-size: 0.8em; line-height: 1.4; }
+  .dark .msg-content pre { background: rgb(255 255 255 / 0.06); }
+  .msg-content pre code { background: transparent; padding: 0; }
+  .msg-content blockquote { border-left: 2px solid var(--color-primary); padding-left: 0.8em; margin: 0.5em 0; opacity: 0.75; }
+  .msg-content table { width: 100%; border-collapse: collapse; margin: 0.5em 0; font-size: 0.85em; }
+  .msg-content th { text-align: left; font-weight: 600; padding: 0.3em 0.5em; border-bottom: 1px solid rgb(0 0 0 / 0.08); }
+  .dark .msg-content th { border-bottom-color: rgb(255 255 255 / 0.08); }
+  .msg-content td { padding: 0.3em 0.5em; border-bottom: 1px solid rgb(0 0 0 / 0.04); }
+  .dark .msg-content td { border-bottom-color: rgb(255 255 255 / 0.04); }
+</style>
 
 <style>
   .msg-content h1 { font-size: 1.1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
@@ -140,18 +258,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1px solid currentColor;
-    opacity: 0.3;
     cursor: help;
+    opacity: 0.85;
     transition: opacity 0.15s;
-    vertical-align: middle;
     flex-shrink: 0;
+    font-size: 12px;
+    line-height: 1;
   }
-  .info-dot svg { pointer-events: none; width: 10px; height: 10px; }
-  .info-dot:hover { opacity: 0.6; }
+  .info-dot::after {
+    content: '💡';
+  }
+  .info-dot:hover { opacity: 1; }
 
   .score-bar {
     display: flex;
@@ -167,7 +284,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     transition: width 0.3s ease;
   }
   .score-bar-vec { background: var(--color-primary); }
-  .score-bar-bm25 { background: #f59e0b; }
+  .score-bar-bm25 { background: #f59e0b;   }
+</style>
+
+<style is:global>
+  .msg-content p { margin: 0.5em 0; line-height: 1.7; }
+  .msg-content ul, .msg-content ol { padding-left: 1.5em; margin: 0.4em 0; }
+  .msg-content li { margin: 0.3em 0; line-height: 1.6; }
+  .msg-content h1 { font-size: 1.1rem; font-weight: 700; margin: 0.8em 0 0.4em; }
+  .msg-content h2 { font-size: 1rem; font-weight: 650; margin: 0.6em 0 0.3em; padding-bottom: 0.2em; border-bottom: 1px solid rgb(0 0 0 / 0.06); }
+  .msg-content h3 { font-size: 0.95rem; font-weight: 600; margin: 0.5em 0 0.2em; }
+  .msg-content strong { font-weight: 650; }
+  .msg-content em { font-style: italic; }
+  .msg-content hr { border: 0; height: 1px; background: rgb(0 0 0 / 0.06); margin: 0.8em 0; }
+  .msg-content blockquote { border-left: 2px solid #7c3aed; padding-left: 0.8em; margin: 0.5em 0; opacity: 0.8; }
+  .msg-content code { font-family: 'DM Mono', monospace; font-size: 0.85em; background: rgb(0 0 0 / 0.04); padding: 0.1em 0.35em; border-radius: 3px; }
+  .msg-content pre { background: rgb(0 0 0 / 0.04); padding: 0.6em 0.8em; border-radius: 6px; overflow-x: auto; margin: 0.5em 0; }
+  .msg-content pre code { background: transparent; padding: 0; }
+  .dark .msg-content h2 { border-bottom-color: rgb(255 255 255 / 0.06); }
+  .dark .msg-content hr { background: rgb(255 255 255 / 0.06); }
+  .dark .msg-content code { background: rgb(255 255 255 / 0.08); }
+  .dark .msg-content blockquote { border-left-color: #a78bfa; }
 </style>
 
 <script is:inline src="/marked.min.js"></script>
@@ -312,10 +449,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   function renderMarkdown(text) {
     if (typeof marked !== 'undefined') {
-      return marked.parse(text);
+      return marked.parse(text, { breaks: true });
     }
     return text.replace(/\n/g, '<br/>');
   }
+  const formatMarkdown = text => typeof marked !== 'undefined' ? marked.parse(text, { breaks: true }) : text.replace(/\n/g, '<br/>');
+  window.formatMarkdown = formatMarkdown;
 
   function addMessage(role, content, html = false) {
     const div = document.createElement('div');
@@ -366,21 +505,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
     metricsContent.innerHTML = `
         <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
-          <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
-            路由类型
-            <span class="info-dot inline-flex" data-title="系统自动判断的查询类型：详细指导=步骤教学，列表推荐=菜品列表，通用问答=知识解答">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </span>
-          </div>
-          <div class="text-sm font-medium">${metrics.query?.route_type || '—'}</div>
-        </div>
-        ${metrics.elapsed_ms ? `<div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
-          <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
-            耗时
-            <span class="info-dot inline-flex" data-title="从接收问题到返回答案的端到端时间，包含检索和 LLM 生成">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </span>
-          </div>
+           <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
+             路由类型
+             <span class="info-dot inline-flex" data-title="系统自动判断的查询类型：详细指导=步骤教学，列表推荐=菜品列表，通用问答=知识解答"></span>
+           </div>
+           <div class="text-sm font-medium">${metrics.query?.route_type || '—'}</div>
+         </div>
+         ${metrics.elapsed_ms ? `<div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
+           <div class="flex items-center gap-0.5 text-[10px] opacity-35 mb-1.5">
+             耗时
+             <span class="info-dot inline-flex" data-title="从接收问题到返回答案的端到端时间，包含检索和 LLM 生成"></span>
+           </div>
           <div class="text-sm font-mono font-medium">${metrics.elapsed_ms}ms</div>
         </div>` : ''}
         <div class="rounded-xl border border-black/6 bg-black/[0.015] p-3 dark:border-white/8 dark:bg-white/[0.02]">
@@ -443,6 +578,177 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     } finally {
       sendBtn.disabled = false;
       input.focus();
+    }
+  });
+</script>
+
+<script>
+  // Version tab switching
+  const tabRag = document.getElementById('tab-rag');
+  const tabGraphrag = document.getElementById('tab-graphrag');
+  const demoRag = document.getElementById('demo-rag');
+  const demoGraphrag = document.getElementById('demo-graphrag');
+
+  function switchTab(active) {
+    if (active === 'rag') {
+      demoRag.style.display = '';
+      demoGraphrag.style.display = 'none';
+      tabRag.className = tabRag.className.replace(/border-transparent/, 'border-amber-500/40').replace(/bg-black.*?\]/, 'bg-amber-500/[0.06]');
+      tabGraphrag.className = tabGraphrag.className.replace(/border-violet-500\/40/, 'border-transparent').replace(/bg-violet-500.*?\]/, 'bg-black/[0.02] dark:bg-white/[0.02]');
+    } else {
+      demoRag.style.display = 'none';
+      demoGraphrag.style.display = '';
+      tabGraphrag.className = tabGraphrag.className.replace(/border-transparent/, 'border-violet-500/40').replace(/bg-black.*?\]/, 'bg-violet-500/[0.06]');
+      tabRag.className = tabRag.className.replace(/border-amber-500\/40/, 'border-transparent').replace(/bg-amber-500.*?\]/, 'bg-black/[0.02] dark:bg-white/[0.02]');
+    }
+  }
+
+  tabRag.addEventListener('click', () => switchTab('rag'));
+  tabGraphrag.addEventListener('click', () => switchTab('graphrag'));
+
+  if (window.location.hash === '#graphrag') switchTab('graphrag');
+
+  // GraphRAG chat
+  const graphragInput = document.getElementById('graphrag-input');
+  const graphragSendBtn = document.getElementById('graphrag-send-btn');
+  const graphragChat = document.querySelector('#demo-graphrag .overflow-y-auto');
+  const graphragStrategyCards = document.querySelectorAll('#demo-graphrag .STRATEGY ~ div > div[class*=\"rounded-xl\"]');
+
+  const GRAPHRAG_API = '/api/graphchat';
+
+  const STRATEGY_NAMES = {
+    hybrid_traditional: '🔍 传统混合检索',
+    graph_rag: '🕸️ 图 RAG 检索',
+    combined: '🔄 组合检索',
+  };
+
+  async function sendGraphragQuery(query) {
+    if (!query.trim()) return;
+
+    const userBubble = document.createElement('div');
+    userBubble.className = 'flex items-start gap-3 justify-end';
+    userBubble.innerHTML = `<div class="rounded-2xl rounded-tr-md bg-violet-500/10 px-4 py-3 text-sm max-w-[80%]">${query}</div>`;
+    graphragChat.appendChild(userBubble);
+
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'flex items-start gap-3';
+    aiBubble.innerHTML = `<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-base dark:bg-violet-500/20">🕸️</div><div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content"><span class="inline-block animate-pulse">思考中…</span></div>`;
+    graphragChat.appendChild(aiBubble);
+    graphragChat.scrollTop = graphragChat.scrollHeight;
+    graphragInput.value = '';
+    graphragSendBtn.disabled = true;
+
+    try {
+      const resp = await fetch(GRAPHRAG_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      const data = await resp.json();
+      const msgDiv = aiBubble.querySelector('.msg-content');
+
+      const answer = data.answer || '';
+      const ri = data.routing_info || {};
+      const strategy = ri.strategy || '';
+      const label = STRATEGY_NAMES[strategy] || strategy;
+      const depth = (data.graph_metrics || {}).traversal_depth || 0;
+      const nodes = (data.graph_metrics || {}).node_count || 0;
+      const latency = ((data.metrics || {}).latency_seconds || 0).toFixed(1);
+
+      const badgeHtml = strategy ? `<div class="mb-3 flex items-center gap-2 text-[11px] opacity-60"><span class="rounded-md bg-violet-500/10 px-2 py-0.5 font-medium text-violet-600 dark:text-violet-400">${label}</span>${depth ? `<span class=\"opacity-50\">depth=${depth}</span>` : ''}${nodes ? `<span class=\"opacity-50\">${nodes} nodes</span>` : ''}<span class=\"ml-auto opacity-40 font-mono\">${latency}s</span></div>` : '';
+
+      msgDiv.innerHTML = badgeHtml + (window.formatMarkdown ? window.formatMarkdown(answer) : answer.replace(/\n/g, '<br/>'));
+      updateGraphragMetrics(data);
+    } catch (e) {
+      aiBubble.querySelector('.msg-content').textContent = 'GraphRAG 引擎未连接（需要启动后端服务）';
+    } finally {
+      graphragSendBtn.disabled = false;
+    }
+    graphragChat.scrollTop = graphragChat.scrollHeight;
+  }
+
+  function updateGraphragMetrics(data) {
+    const set = (id, val, fmt) => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = val != null && val !== '' ? (fmt ? fmt(val) : val) : '—'; el.style.opacity = val != null && val !== '' ? '0.8' : '0.2'; }
+    };
+    const ri = data.routing_info || {};
+    const gm = data.graph_metrics || {};
+    const m = data.metrics || {};
+
+    set('gm-route-strategy', STRATEGY_NAMES[ri.strategy] || ri.strategy);
+    set('gm-search-source', gm.search_source || ri.strategy);
+    set('gm-retrieval-count', m.retrieval_count);
+    set('gm-latency', m.latency_seconds != null ? m.latency_seconds + 's' : null);
+    set('gm-node-count', gm.node_count);
+    set('gm-depth', gm.traversal_depth);
+    set('gm-confidence', m.confidence_score != null ? (m.confidence_score * 100).toFixed(0) + '%' : null);
+    set('gm-intensity', ri.relationship_intensity != null ? ri.relationship_intensity.toFixed(2) : null);
+
+    // Highlight active strategy card
+    const strategy = ri.strategy || '';
+    const reasoningEl = document.getElementById('gs-reasoning');
+    document.querySelectorAll('#demo-graphrag [data-strategy]').forEach(card => {
+      const s = card.getAttribute('data-strategy');
+      const active = s === strategy;
+      card.style.borderColor = active ? '' : '';
+      card.style.backgroundColor = active ? '' : '';
+      card.className = card.className
+        .replace(/border-violet-500\/\d+|border-black\/\d+/, active ? 'border-violet-500/40' : 'border-black/6')
+        .replace(/bg-violet-500\/\[[\d.]+\]|bg-black\/\[[\d.]+\]/, active ? 'bg-violet-500/[0.06]' : 'bg-black/[0.01]');
+      card.querySelector('.opacity-20')?.classList.toggle('opacity-20', !active);
+      card.querySelector('.opacity-20')?.classList.toggle('opacity-40', active);
+    });
+    if (reasoningEl && ri.reasoning) {
+      reasoningEl.textContent = ri.reasoning.slice(0, 30);
+      reasoningEl.classList.remove('invisible');
+    } else if (reasoningEl) {
+      reasoningEl.classList.add('invisible');
+    }
+
+    // Render graph visualization
+    renderGraphCanvas(data);
+  }
+
+  function renderGraphCanvas(data) {
+    const canvas = document.getElementById('graph-canvas');
+    if (!canvas) return;
+    const gm = data.graph_metrics || {};
+    const ri = data.routing_info || {};
+    const nodeCount = Math.min(gm.node_count || 0, 24);
+    const depth = gm.traversal_depth || 0;
+    const source = gm.search_source || '';
+
+    const RC = '#a78bfa', IC = '#fbbf24', CC = '#34d399';
+
+    if (nodeCount === 0 || source !== 'graph_rag') {
+      canvas.innerHTML = `<div class="flex flex-col items-center gap-2">
+        <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 rounded-full" style="background:${RC}"></div><div class="h-px w-6" style="background:${RC}33"></div><div class="h-2.5 w-2.5 rounded-full" style="background:${IC}"></div><div class="h-px w-6" style="background:${RC}33"></div><div class="h-2.5 w-2.5 rounded-full" style="background:${CC}"></div></div>
+        <div class="flex gap-3 text-[9px] text-black/55 dark:text-white/50"><span style="color:${RC}">● 菜谱</span><span style="color:${IC}">● 食材</span><span style="color:${CC}">● 分类</span></div>
+        <div class="text-[10px] text-black/45 dark:text-white/40">Neo4j · 362 菜谱 · 500+ 食材 · 3 跳推理</div>
+      </div>`;
+      return;
+    }
+
+    const COLORS = [RC, IC, CC];
+    let html = '<div class="flex flex-col items-center gap-2">';
+    html += '<div class="flex flex-wrap justify-center gap-1" style="max-width:200px">';
+    for (let i = 0; i < nodeCount; i++) {
+      const c = COLORS[i % 3];
+      html += `<span class="inline-block rounded-full" style="width:8px;height:8px;background:${c};opacity:0.7"></span>`;
+    }
+    html += '</div>';
+    html += `<div class="text-[10px] text-black/70 dark:text-white/70">${nodeCount} nodes · depth ${depth}</div>`;
+    html += `<div class="flex gap-3 text-[9px]"><span style="color:${RC}">● 菜谱</span><span style="color:${IC}">● 食材</span><span style="color:${CC}">● 分类</span></div>`;
+    html += '</div>';
+    canvas.innerHTML = html;
+  }
+
+  graphragSendBtn.addEventListener('click', () => sendGraphragQuery(graphragInput.value));
+  graphragInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendGraphragQuery(graphragInput.value);
     }
   });
 </script>

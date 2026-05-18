@@ -9,16 +9,6 @@ url: "/chefmate/"
 
 > **从 CLI 到 Web，一个完整 RAG 系统的工程化实践**。基于 362 个真实菜谱，涵盖数据准备、向量索引、混合检索、查询路由、LLM 生成、指标可视化与生产部署的全链路实现。已上线运行于 [vincentbuilds.fun](https://vincentbuilds.fun)。
 
-## 目录
-
-- [系统架构](#系统架构)
-- [核心技术](#核心技术)
-- [关键功能](#关键功能)
-- [安全防护](#安全防护)
-- [本地开发](#本地开发)
-
----
-
 ## 系统架构
 
 ```
@@ -191,5 +181,11 @@ uv run uvicorn chefmate.server:app --reload --port 8000
 # 前端（另一个终端）
 npm install && npm run dev    # http://localhost:4321
 ```
+
+## V2 演进
+
+ChefMate GraphRAG 版本已上线，基于 Neo4j 知识图谱支持多跳推理、食材搭配发现和相似菜品推荐。
+
+[查看 ChefMate GraphRAG →](/projects/chefmate-graphrag)
 
 **注意**：向量索引各环境独立，首次启动会自动构建（约 20 秒）。不要跨环境复制 `vector_index/`。
