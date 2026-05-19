@@ -22,12 +22,12 @@ class MilvusIndexConstructionModule:
         self.model_name = model_name
         self.embeddings = None
         self.collection = None
+        self._milvus_ok = False
         self._connect()
         self._init_embeddings()
         self.chunk_texts: List[str] = []
         self._bm25_corpus: List = []
         self._bm25_index = None
-        self._milvus_ok = False
 
     def _connect(self):
         try:
