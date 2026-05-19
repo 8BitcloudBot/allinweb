@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class MilvusIndexConstructionModule:
     def __init__(self, host: str = "localhost", port: int = 19530,
                  collection_name: str = "cooking_knowledge",
-                 dimension: int = 512,
+                 dimension: int = 768,
                  model_name: str = "BAAI/bge-small-zh-v1.5"):
         self.host = host
         self.port = port
@@ -40,13 +40,23 @@ class MilvusIndexConstructionModule:
             self.collection = None
 
     def _init_embeddings(self):
-        hf_endpoint = os.getenv("HF_ENDPOINT", "https://hf-mirror.com")
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.model_name,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
-        )
-        logger.info(f"Embeddings model: {self.model_name}")
+        # Prefer local model cache to avoid HF download issues
+        local_path = "/app/model_cache/bge-base-zh-v1.5"
+        if os.path.isdir(local_path) and os.path.exists(os.path.join(local_path, "config.json")):
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=local_path,
+                model_kwargs={"device": "cpu"},
+                encode_kwargs={"normalize_embeddings": True},
+            )
+            logger.info(f"Embeddings model: {local_path} (local cache)")
+        else:
+            hf_endpoint = os.getenv("HF_ENDPOINT", "https://hf-mirror.com")
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=self.model_name,
+                model_kwargs={"device": "cpu"},
+                encode_kwargs={"normalize_embeddings": True},
+            )
+            logger.info(f"Embeddings model: {self.model_name} (remote)")
 
     def has_collection(self) -> bool:
         if not self._milvus_ok:
