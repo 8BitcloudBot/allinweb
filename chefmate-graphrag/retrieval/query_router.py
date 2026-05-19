@@ -35,13 +35,14 @@ _FAST_ROUTE_RULES = [
         r"搭配|配什么|组合|相配",
         r"替代|替换|代替",
         r"区别|对比|比较|营养",
-        r"还需要什么|需要哪些\b",
+        r"还需要什么|需要哪些\b|用了什么|用什么|用.*做的菜|用.*做.*哪些",
         r"类似|相似|差不多|同类型的",
         r"关系|关联|联系|相关",
     ]),
     (SearchStrategy.HYBRID, [
         r"怎么做|做法|步骤|怎么",
-        r"推荐|有哪些|哪些|有什么",
+        r"^推荐|推荐几个|推荐一些",
+        r"有什么|有哪些\b",
         r"是什么|什么是|什么意思",
     ]),
 ]
@@ -146,26 +147,24 @@ class IntelligentQueryRouter:
         self._update_stats(analysis.recommended_strategy)
         logger.info(f"Routing: {analysis.recommended_strategy.value} (complexity={analysis.query_complexity:.2f})")
 
+        hybrid_ok = self.traditional and getattr(self.traditional, '_milvus_ok', False)
+
         docs = []
         try:
             if analysis.recommended_strategy == SearchStrategy.HYBRID:
-                docs = self.traditional.hybrid_search(query, top_k)
+                docs = self.traditional.hybrid_search(query, top_k) if hybrid_ok else []
             elif analysis.recommended_strategy == SearchStrategy.GRAPH_RAG:
                 docs = self.graph_rag.graph_rag_search(query, top_k)
-                if not docs and self.traditional:
+                if not docs and hybrid_ok:
                     logger.info("GraphRAG returned empty, falling back to hybrid")
                     docs = self.traditional.hybrid_search(query, top_k)
-                    # Mark as hybrid so generator uses correct prompt
-                    analysis.recommended_strategy = SearchStrategy.HYBRID
             else:
                 docs = self._combined_search(query, top_k)
-                if not docs and self.traditional:
+                if not docs and hybrid_ok:
                     docs = self.traditional.hybrid_search(query, top_k)
-                    analysis.recommended_strategy = SearchStrategy.HYBRID
         except Exception as e:
-            logger.error(f"Search failed, fallback to traditional: {e}")
-            if self.traditional:
-                docs = self.traditional.hybrid_search(query, top_k)
+            logger.error(f"Search failed: {e}")
+            docs = []
 
         for doc in docs:
             doc.metadata["route_strategy"] = analysis.recommended_strategy.value
