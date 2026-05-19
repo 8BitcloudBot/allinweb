@@ -166,17 +166,45 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div data-strategy="graph_rag" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🕸️</span><div class="text-[11px] font-medium opacity-70">图 RAG 检索</div><span id="gs-reasoning" class="ml-auto text-[10px] font-mono opacity-20 invisible"></span><span class="info-dot inline-flex ml-1" data-title="在图数据库Neo4j中执行多跳遍历和子图提取，利用实体关系网络进行推理。适合食材搭配、食材替代、相似菜品等需要关系推理的查询"></span></div>
           </div>
         </div>
-        <div class="rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
-          <div class="flex items-center gap-1 mb-3">
-            <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50">GRAPH</h3>
-            <span class="info-dot inline-flex" data-title="知识图谱可视化。紫色=菜谱节点，琥珀色=食材节点，翠绿色=分类节点。连线表示节点间的关系（实线=食材需求，虚线=分类归属，点线=烹饪步骤）"></span>
+        <div class="h-[480px] flex flex-col rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+          <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50 mb-3 shrink-0">PROMPTS <span class="info-dot inline-flex" data-title="点击示例查询直接发送到 GraphRAG 引擎。包含食材搭配、相似菜品、食材替代等图谱推理场景"></span></h3>
+          <div class="flex-1 space-y-2.5 overflow-hidden">
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="鸡肉配什么蔬菜">
+              <span class="font-medium opacity-70">鸡肉配什么蔬菜</span>
+              <span class="opacity-30 ml-1.5">食材搭配</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="和宫保鸡丁类似的菜">
+              <span class="font-medium opacity-70">和宫保鸡丁类似的菜</span>
+              <span class="opacity-30 ml-1.5">相似查询</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="土豆能替代什么食材">
+              <span class="font-medium opacity-70">土豆能替代什么食材</span>
+              <span class="opacity-30 ml-1.5">食材替代</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="川菜有哪些用了花椒的菜">
+              <span class="font-medium opacity-70">川菜有哪些用了花椒的菜</span>
+              <span class="opacity-30 ml-1.5">多条件查询</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="大葱可以和什么一起炒">
+              <span class="font-medium opacity-70">大葱可以和什么一起炒</span>
+              <span class="opacity-30 ml-1.5">食材搭配</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="什么菜用了牛肉和土豆">
+              <span class="font-medium opacity-70">什么菜用了牛肉和土豆</span>
+              <span class="opacity-30 ml-1.5">多条件查询</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="推荐一些难度较高的菜">
+              <span class="font-medium opacity-70">推荐一些难度较高的菜</span>
+              <span class="opacity-30 ml-1.5">条件推荐</span>
+            </button>
+            <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-violet-500/30 hover:bg-violet-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-violet-500/30 dark:hover:bg-violet-500/[0.05]" data-query="用花椒做的菜有哪些">
+              <span class="font-medium opacity-70">用花椒做的菜有哪些</span>
+              <span class="opacity-30 ml-1.5">反向查询</span>
+            </button>
           </div>
-          <div id="graph-canvas" class="rounded-xl border border-dashed border-black/10 bg-black/[0.01] px-3 py-4 dark:border-white/10 dark:bg-white/[0.01] min-h-[80px]">
-            <div class="flex flex-col items-center gap-2">
-              <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 rounded-full bg-violet-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-amber-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-emerald-400"></div><div class="h-px w-6 bg-violet-300/20"></div><div class="h-2.5 w-2.5 rounded-full bg-rose-400"></div></div>
-<div class="text-[10px] text-black/55 dark:text-white/50">Neo4j · 362 菜谱 · 500+ 食材 · 3 跳推理</div>
-            </div>
-          </div>
+        </div>
+        <div id="graphrag-status" class="rounded-xl border border-black/10 bg-black/[0.03] px-3 py-3 text-xs leading-relaxed opacity-55 dark:border-white/10 dark:bg-white/[0.04]">
+          <span id="graphrag-status-text">检索分析结果在页面下方生成</span>
         </div>
       </div>
     </div>
@@ -430,9 +458,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   document.querySelectorAll('.prompt-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const q = chip.getAttribute('data-query');
-      if (q) {
+      if (!q) return;
+      // Detect which section the chip is in
+      if (chip.closest('#demo-graphrag')) {
+        graphragInput.value = q;
+        graphragInput.classList.add('ring-2', 'ring-violet-500/40');
+        setTimeout(() => graphragInput.classList.remove('ring-2', 'ring-violet-500/40'), 600);
+        graphragInput.focus();
+      } else {
         input.value = q;
-        // Shake animation instead of auto-submit (user-friendly)
         input.classList.add('ring-2', 'ring-primary/40');
         setTimeout(() => input.classList.remove('ring-2', 'ring-primary/40'), 600);
         input.focus();
@@ -625,6 +659,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   async function sendGraphragQuery(query) {
     if (!query.trim()) return;
 
+    updateGraphragStatus('loading');
+
     const userBubble = document.createElement('div');
     userBubble.className = 'flex items-start gap-3 justify-end';
     userBubble.innerHTML = `<div class="rounded-2xl rounded-tr-md bg-violet-500/10 px-4 py-3 text-sm max-w-[80%]">${query}</div>`;
@@ -659,12 +695,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       msgDiv.innerHTML = badgeHtml + (window.formatMarkdown ? window.formatMarkdown(answer) : answer.replace(/\n/g, '<br/>'));
       updateGraphragMetrics(data);
+      updateGraphragStatus('ready');
     } catch (e) {
+      updateGraphragStatus('error');
       aiBubble.querySelector('.msg-content').textContent = 'GraphRAG 引擎未连接（需要启动后端服务）';
     } finally {
       graphragSendBtn.disabled = false;
     }
     graphragChat.scrollTop = graphragChat.scrollHeight;
+  }
+
+  function updateGraphragStatus(state) {
+    const el = document.getElementById('graphrag-status');
+    const text = document.getElementById('graphrag-status-text');
+    if (!el || !text) return;
+    if (state === 'loading') {
+      text.textContent = '正在检索分析…';
+      el.style.opacity = '0.75';
+    } else if (state === 'ready') {
+      text.textContent = '检索分析结果已生成 ↓';
+      el.style.opacity = '0.8';
+    } else if (state === 'error') {
+      text.textContent = '检索失败，请检查后端服务';
+      el.style.opacity = '0.75';
+    } else {
+      text.textContent = '检索分析结果在页面下方生成';
+      el.style.opacity = '0.55';
+    }
   }
 
   function updateGraphragMetrics(data) {
