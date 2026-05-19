@@ -164,6 +164,16 @@ async def graph_chat(req: ChatRequest):
         actual_query = f"{actual_query}\n\n[对话上下文]\n{dialogue_context}"
     docs, analysis = router.route_query(actual_query)
 
+    # HyDE fallback: when all strategies return empty, use hypothetical document embedding
+    if not docs and system.get("index_module"):
+        logger.info("All strategies returned empty, trying HyDE...")
+        hypothetical = system["generation"].generate_hypothetical_recipe(actual_query)
+        if hypothetical:
+            hyde_docs = system["index_module"].hybrid_search(hypothetical, top_k=10)
+            if hyde_docs:
+                docs = hyde_docs
+                logger.info(f"HyDE recovered {len(docs)} documents")
+
     compressed = system["context_budget"].compress_context(docs)
     answer = system["generation"].generate_adaptive_answer(actual_query, compressed)
 
@@ -244,6 +254,15 @@ async def _stream_answer(query: str) -> AsyncGenerator[str, None]:
 
         start_time = time.time()
         docs, analysis = router.route_query(actual_query)
+
+        # HyDE fallback in streaming
+        if not docs and system.get("index_module"):
+            hypothetical = system["generation"].generate_hypothetical_recipe(actual_query)
+            if hypothetical:
+                docs = system["index_module"].hybrid_search(hypothetical, top_k=10)
+                if docs:
+                    yield f"event: hyde\ndata: {json.dumps({'recovered': len(docs)}, ensure_ascii=False)}\n\n"
+
         compressed = system["context_budget"].compress_context(docs)
 
         yield f"event: routing_decision\ndata: {json.dumps({'strategy': analysis.recommended_strategy.value if analysis else '', 'complexity': analysis.query_complexity if analysis else 0, 'confidence': analysis.confidence if analysis else 0}, ensure_ascii=False)}\n\n"

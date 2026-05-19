@@ -140,6 +140,15 @@ class RecipeRAGSystem:
         relevant_chunks = self.retrieval_module.hybrid_search(
             rewritten_query, top_k=top_k, filters=filters if filters else None
         )
+
+        # HyDE fallback: when retrieval returns empty, generate hypothetical document and re-search
+        if not relevant_chunks:
+            hypothetical = self._hyde_generate(actual_query)
+            if hypothetical:
+                relevant_chunks = self.retrieval_module.hybrid_search(
+                    hypothetical, top_k=top_k
+                )
+
         relevant_docs = self.data_module.get_parent_documents(relevant_chunks)
 
         elapsed_ms = (time.time() - t0) * 1000
@@ -221,6 +230,27 @@ class RecipeRAGSystem:
         if with_metrics:
             return {"answer": answer, "metrics": metrics}
         return answer
+
+    def _hyde_generate(self, query: str) -> str:
+        """Generate a hypothetical recipe description for HyDE re-search."""
+        try:
+            from openai import OpenAI
+            client = OpenAI(
+                api_key=self.config.deepseek_api_key,
+                base_url=self.config.deepseek_base_url,
+            )
+            prompt = f"""你是中餐厨师。用户问了一个问题，请用一段自然流畅的文字描述可能的答案。
+不用列表，就一段话，描述相关的菜品名称、主要食材和做法特点。控制在150字以内。
+
+用户问题: {query}"""
+            response = client.chat.completions.create(
+                model=self.config.llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5, max_tokens=300,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception:
+            return ""
 
     def run_interactive(self):
         print("=" * 60)
