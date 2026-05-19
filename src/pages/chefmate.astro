@@ -155,17 +155,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </form>
       </div>
       <div class="flex flex-col gap-4">
-        <div class="rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
-          <div class="flex items-center gap-1 mb-3">
-            <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50">STRATEGY</h3>
-            <span class="info-dot inline-flex" data-title="系统根据查询类型自动选择的检索策略。简单查询走传统混合检索（Milvus+BM25），关系推理走图RAG（Neo4j多跳遍历），复杂查询走组合策略"></span>
-          </div>
-          <div class="space-y-2">
-            <div data-strategy="hybrid_traditional" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🔍</span><div class="text-[11px] font-medium opacity-70">传统混合检索</div><span class="ml-auto text-[10px] font-mono opacity-30">简单</span><span class="info-dot inline-flex ml-1" data-title="仅使用向量+BM25关键词匹配，不涉及图数据库查询。适合菜谱搜索、做法指导、推荐查询。延迟低、结果稳定"></span></div>
-            <div data-strategy="combined" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🔄</span><div class="text-[11px] font-medium opacity-70">组合检索</div><span class="ml-auto text-[10px] font-mono opacity-30">中等</span><span class="info-dot inline-flex ml-1" data-title="同时执行传统混合检索和图RAG检索，通过RRF算法融合结果。适合多条件查询（如「哪些菜用了土豆又用了猪肉」）"></span></div>
-            <div data-strategy="graph_rag" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-2.5 transition-all duration-200"><span class="text-sm">🕸️</span><div class="text-[11px] font-medium opacity-70">图 RAG 检索</div><span id="gs-reasoning" class="ml-auto text-[10px] font-mono opacity-20 invisible"></span><span class="info-dot inline-flex ml-1" data-title="在图数据库Neo4j中执行多跳遍历和子图提取，利用实体关系网络进行推理。适合食材搭配、食材替代、相似菜品等需要关系推理的查询"></span></div>
-          </div>
-        </div>
         <div class="h-[480px] flex flex-col rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
           <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50 mb-3 shrink-0">PROMPTS <span class="info-dot inline-flex" data-title="点击示例查询直接发送到 GraphRAG 引擎。包含食材搭配、相似菜品、食材替代等图谱推理场景"></span></h3>
           <div class="flex-1 space-y-2.5 overflow-hidden">
@@ -206,6 +195,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div id="graphrag-status" class="rounded-xl border border-black/10 bg-black/[0.03] px-3 py-3 text-xs leading-relaxed opacity-55 dark:border-white/10 dark:bg-white/[0.04]">
           <span id="graphrag-status-text">检索分析结果在页面下方生成</span>
         </div>
+      </div>
+    </div>
+    <!-- Strategy: full-width, horizontal 3-column -->
+    <div class="mt-5 rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+      <div class="flex items-center gap-1 mb-3">
+        <h3 class="text-xs font-mono tracking-[0.18em] text-black/55 dark:text-white/50">STRATEGY</h3>
+        <span class="info-dot inline-flex" data-title="系统根据查询类型自动选择的检索策略。简单查询走传统混合检索（Milvus+BM25），关系推理走图RAG（Neo4j多跳遍历），复杂查询走组合策略"></span>
+      </div>
+      <div class="grid gap-3 lg:grid-cols-3">
+        <div data-strategy="hybrid_traditional" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-3 transition-all duration-200"><span class="text-base">🔍</span><div><div class="text-xs font-medium opacity-70">传统混合检索</div><div class="text-[10px] opacity-30">Milvus + BM25 + RRF</div></div><span class="ml-auto text-[10px] font-mono opacity-30">简单</span><span class="info-dot inline-flex ml-1" data-title="仅使用向量+BM25关键词匹配，不涉及图数据库查询。适合菜谱搜索、做法指导、推荐查询。延迟低、结果稳定"></span></div>
+        <div data-strategy="combined" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-3 transition-all duration-200"><span class="text-base">🔄</span><div><div class="text-xs font-medium opacity-70">组合检索</div><div class="text-[10px] opacity-30">传统 + 图 RAG</div></div><span class="ml-auto text-[10px] font-mono opacity-30">中等</span><span class="info-dot inline-flex ml-1" data-title="同时执行传统混合检索和图RAG检索，通过RRF算法融合结果。适合多条件查询（如「哪些菜用了土豆又用了猪肉」）"></span></div>
+        <div data-strategy="graph_rag" class="flex items-center gap-3 rounded-xl border border-black/6 bg-black/[0.01] p-3 transition-all duration-200"><span class="text-base">🕸️</span><div><div class="text-xs font-medium opacity-70">图 RAG 检索</div><div class="text-[10px] opacity-30">多跳推理 · 子图提取</div></div><span id="gs-reasoning" class="ml-auto text-[10px] font-mono opacity-20 invisible"></span><span class="info-dot inline-flex ml-1" data-title="在图数据库Neo4j中执行多跳遍历和子图提取，利用实体关系网络进行推理。适合食材搭配、食材替代、相似菜品等需要关系推理的查询"></span></div>
       </div>
     </div>
     <!-- Metrics below, full-width -->
