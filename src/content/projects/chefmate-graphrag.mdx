@@ -1,133 +1,127 @@
 ---
 title: "ChefMate GraphRAG — 图增强智能食谱问答"
-description: "基于 Neo4j + Milvus + DeepSeek V4 的知识图谱 RAG 系统，支持多跳推理、智能路由与三级降级策略。"
+description: "基于 Neo4j + Milvus + DeepSeek V4 的知识图谱 RAG 系统，支持多跳推理、智能路由与三级降级策略，部署于跨云分布式架构。"
 pubDate: 2026-05-19
 tags: ["GraphRAG", "Neo4j", "Milvus", "DeepSeek", "RAG"]
 github: "https://github.com/8BitcloudBot/ChefMate-GraphRAG"
-demo: "/chefmate/#graphrag"
-
+url: "/chefmate/#graphrag"
 ---
 
-> ChefMate 的下一代版本，引入 Neo4j 知识图谱解决传统 RAG 在复杂推理上的局限。
+> ChefMate 的下一代版本，引入 Neo4j 知识图谱解决传统 RAG 在复杂推理上的局限。已通过跨云分布式架构上线运行。
 
-## 架构
+## 部署架构（跨云分布式）
 
 ```
-用户查询
-    │
-    ▼
-┌─────────────────────────────────┐
-│ 智能路由 (Intelligent Router)    │
-│ 规则引擎快速路径 + LLM 兜底分析  │
-└─────────────────────────────────┘
-    │
-    ├── hybrid_traditional (60%)  → Milvus + BM25 + RRF
-    ├── graph_rag (30%)           → Neo4j 多跳遍历 + 子图提取
-    └── combined (10%)            → 传统 + 图 → RRF 融合
-         │
-         ▼
-    DeepSeek V4 生成 + Validator 校验
-         │
-         ▼
-    回答 + 路由策略 + 图指标
+┌─────────────── Aliyun ECS (2GB) ───────────┐
+│  Nginx (HTTPS)                              │
+│    ├── /          → 静态站点                 │
+│    ├── /api/*     → V1 ChefMate RAG :8000    │
+│    └── /api/graphchat → ──────────────────┐  │
+└───────────────────────────────────────────│──┘
+                                           │
+┌─────────────── Tencent (4GB) ────────────▼──┐
+│  GraphRAG API (FastAPI :8001)                │
+│    ├── Neo4j 5.26  (知识图谱, :7687)         │
+│    ├── Milvus 2.5  (向量索引, :19530)        │
+│    ├── etcd + MinIO (Milvus 依赖)            │
+│    └── DeepSeek V4 API                       │
+└──────────────────────────────────────────────┘
 ```
 
-## 三策略路由
+> **为什么用跨云架构？** Neo4j + Milvus 需要至少 2GB 额外内存，而 Aliyun 单机仅 2GB。将 GraphRAG 栈独立部署到腾讯云 4GB 实例，Aliyun 仅承担 Nginx 反向代理和轻量 V1 服务，清晰解耦。
 
-| 策略 | 触发条件 | 检索方式 | 示例查询 |
-|------|---------|---------|---------|
-| 🔍 传统混合 | 菜谱查询、推荐 | Milvus 向量 + BM25 关键词 + RRF | 「宫保鸡丁怎么做」 |
-| 🕸️ 图 RAG | 搭配推理、相似菜品 | Neo4j 多跳遍历 + 子图提取 | 「鸡肉配什么蔬菜」 |
-| 🔄 组合策略 | 多条件交叉查询 | 传统 + 图 → RRF 融合 | 「哪些菜用了土豆又用了猪肉」 |
+---
 
 ## 知识图谱
 
 从 361 个菜谱 Markdown 文件中自动抽取构建的 Neo4j 知识图谱：
 
-| 统计 | 数量 |
-|------|------|
-| Recipe 节点 | 360 |
-| Ingredient 节点 | 1056 |
-| Category 节点 | 16 |
-| CookingStep 节点 | 3392 |
-| 关系总数 | 6139 |
+| 节点类型 | 数量 |
+|---------|------|
+| Recipe | 360 |
+| Ingredient | 1195 |
+| Category | 16 |
+| CookingStep | 3392 |
+| **关系总数** | **6332** |
+| Milvus 向量 | 4112 chunks |
 
 ### Schema
 
 ```
-节点: Recipe, Ingredient, Category, CookingStep
-关系: REQUIRES (食材需求)
-      BELONGS_TO_CATEGORY (分类归属)
-      SIMILAR_TO (共享食材 ≥ 3 自动关联)
-      SUBSTITUTE_FOR (人工规则替代映射)
-      CONTAINS_STEP (烹饪步骤)
+关系类型:
+  REQUIRES            菜谱 → 食材
+  BELONGS_TO_CATEGORY 节点 → 分类
+  SIMILAR_TO          菜谱 ↔ 菜谱 (共享食材 ≥ 3)
+  SUBSTITUTE_FOR      食材 → 替代食材
+  CONTAINS_STEP       菜谱 → 烹饪步骤
 ```
+
+---
+
+## 三策略智能路由
+
+| 策略 | 触发场景 | 举例 |
+|------|---------|------|
+| 🔍 传统混合 | 做法查询、推荐 | 「宫保鸡丁怎么做」→ Milvus + BM25 + RRF |
+| 🕸️ 图 RAG | 搭配推理、相似查询 | 「鸡肉配什么蔬菜」→ Neo4j 多跳遍历 |
+| 🔄 组合策略 | 多条件交叉查询 | 「哪些菜用了土豆又用了猪肉」→ RRF 融合 |
+
+路由决策由 **规则引擎快速路径**（正则匹配，0ms）+ **LLM 多维分析**（DeepSeek V4，兜底）两级实现。约 80% 查询命中规则而不需调用 LLM。
+
+---
 
 ## 多跳推理示例
 
 ```
 查询: "鸡肉配什么蔬菜"
 
-LLM 图查询规划:
+图查询规划 (LLM):
   query_type: multi_hop
-  sources: ["鸡肉", "鸡"]
-  targets: ["蔬菜"]
+  sources: ["鸡肉", "鸡"]  targets: ["蔬菜"]
   max_depth: 3
 
-Cypher 图遍历:
-  (鸡肉:Ingredient)-[:REQUIRES]→
-  (新疆大盘鸡:Recipe)-[:REQUIRES]→
-  (大蒜:Ingredient)-[:BELONGS_TO_CATEGORY]→
-  (蔬菜:Category)
+Cypher 遍历 (Neo4j):
+  (鸡肉:Ingredient) → [新疆大盘鸡:Recipe] → (大蒜:Ingredient)
+  → [蔬菜:Category]
 
-回答: 鸡肉通过大盘鸡与大蒜建立搭配 →
-      推理出根茎类+香辛类蔬菜是最佳搭档
+路径评分为 1/length + 关系类型匹配加权，取 Top 30 纳入 LLM 上下文
 ```
 
 ### 相似菜品推理
 
-```
-查询: "和宫保鸡丁类似的菜"
-SIMILAR_TO 关系 → 共享食材 ≥ 3 → 自动关联相似菜品
-```
+1199 条 `SIMILAR_TO` 关系自动关联（共享食材 ≥ 3），「和宫保鸡丁类似的菜」可即时返回相似菜品。
 
 ### 食材替代查询
 
-```
-查询: "土豆能替代什么"
-SUBSTITUTE_FOR 关系 → 山药、芋头、红薯
-```
+17 条 `SUBSTITUTE_FOR` 规则映射（土豆→山药/芋头、猪肉→牛肉/鸡肉 等），覆盖常见替代场景。
+
+---
 
 ## 幻觉防御（三重防线）
 
-1. **JSON 结构化输出** — 约束 LLM 返回 `{"dishes": [{"name": "...", "reason": "..."}]}`
-2. **有效菜名白名单过滤** — `valid_names` 物理剔除编造菜名
-3. **difflib 模糊匹配** — 近似菜名纠错提示
+| 防线 | 实现 | 效果 |
+|------|------|------|
+| JSON 约束 | 列表推荐强制 `{"dishes": [{"name":...,"reason":...}]}` | 从结构约束 |
+| 白名单过滤 | 有效菜名列表物理剔除 | 技术兜底 |
+| 模糊纠错 | `difflib.get_close_matches` | 「宫宝鸡丁」→「宫保鸡丁」 |
 
-## 技术栈
+---
+
+## 核心技术栈
 
 | 组件 | 技术 |
 |------|------|
 | 图数据库 | Neo4j 5.26 Community |
 | 向量数据库 | Milvus 2.5 Standalone |
 | 嵌入模型 | BAAI/bge-small-zh-v1.5 (512-dim) |
-| 关键词检索 | rank-bm25 + jieba |
-| LLM | DeepSeek V4 API |
-| Web 框架 | FastAPI + SSE Streaming |
-| 前端 | Astro + Tailwind CSS + marked.js |
-| 部署 | Docker Compose (4 containers) |
+| 关键词检索 | rank-bm25 + jieba 分词 |
+| LLM | DeepSeek V4 API (`deepseek-chat`) |
+| 后端 | FastAPI + SSE Streaming + slowapi 限流 |
+| 前端 | Astro v6 + Tailwind CSS + marked.js |
+| 容器化 | Docker Compose (5 containers) |
+| 跨云代理 | Nginx 反向代理 (Aliyun → Tencent) |
 
-## 部署架构
-
-```mermaid
-graph LR
-    NG[Nginx] --> FE[Astro 静态文件]
-    NG --> |/api/graphchat| API[FastAPI :8001]
-    API --> NEO[(Neo4j :7687)]
-    API --> MIL[(Milvus :19530)]
-    MIL --> ETCD[(etcd)]
-    MIL --> MINIO[(MinIO)]
-```
+---
 
 ## 与 V1 对比
 
@@ -135,9 +129,10 @@ graph LR
 |------|------------|------------------|
 | 检索方式 | FAISS + BM25 | Milvus + BM25 + Neo4j |
 | 推理能力 | 文本匹配 | 多跳遍历 + 子图提取 + 图推理 |
-| 查询路由 | LLM 3 分类 | 规则引擎 + LLM 多维分析 |
+| 路由策略 | LLM 3 分类 | 规则引擎 + LLM 多维分析 |
 | 食材搭配 | ❌ | ✅ 图谱关系推理 |
-| 相似菜品 | ❌ | ✅ SIMILAR_TO 自动关联 |
-| 食材替代 | ❌ | ✅ SUBSTITUTE_FOR 映射 |
-| 部署 | 1 容器 | 5 容器（API+Neo4j+Milvus+etcd+MinIO） |
+| 相似菜品 | ❌ | ✅ SIMILAR_TO (1199 条) |
+| 食材替代 | ❌ | ✅ SUBSTITUTE_FOR (17 组) |
+| 部署容器 | 1 | 5 (API+Neo4j+Milvus+etcd+MinIO) |
+| 跨云分布式 | ❌ | ✅ Aliyun Nginx → Tencent |
 | 状态 | ✅ 生产运行 | ✅ 生产运行 |
