@@ -335,6 +335,24 @@ class GenerationIntegrationModule:
             logger.error(f"Stream generation failed: {e}")
             yield self.generate_adaptive_answer(query, docs)
 
+    def generate_hypothetical_recipe(self, query: str) -> str:
+        prompt = f"""你是一位经验丰富的中餐厨师。用户问了一个问题，请用一段流畅的段落描述可能的答案。
+不要用列表格式，用自然的连续文字描述。想象你正在给朋友介绍相关的菜品和做法。
+
+用户问题: {query}
+
+请用一段话回答，描述相关的菜品名称、主要食材、做法特点。控制在150字以内。"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.config.llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5, max_tokens=300,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Hypothetical generation failed: {e}")
+            return ""
+
 
 def _is_list_query(query: str) -> bool:
     return any(re.search(p, query) for p in [r"哪些|推荐|有什么|列出|列举|几个"])

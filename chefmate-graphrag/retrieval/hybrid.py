@@ -166,7 +166,7 @@ class MilvusIndexConstructionModule:
                 ))
         return docs
 
-    def hybrid_search(self, query: str, top_k: int = 10) -> List[Document]:
+    def hybrid_search(self, query: str, top_k: int = 10, query_type: str = "general") -> List[Document]:
         vec_docs = self.search(query, top_k)
 
         if not self._bm25_index:
@@ -184,20 +184,27 @@ class MilvusIndexConstructionModule:
                     metadata={**doc.metadata, "bm25_score": float(scores[idx]), "search_source": "bm25"}
                 ))
 
-        return self._rrf_merge(vec_docs, bm25_docs, top_k)
+        return self._rrf_merge(vec_docs, bm25_docs, top_k, query_type=query_type)
 
-    def _rrf_merge(self, vec_docs: List[Document], bm25_docs: List[Document], top_k: int, k: int = 60) -> List[Document]:
+    def _rrf_merge(self, vec_docs: List[Document], bm25_docs: List[Document], top_k: int, k: int = 60, query_type: str = "general") -> List[Document]:
+        # Weighted RRF: adjust vector vs BM25 importance based on query type
+        weights = {"vector": 0.5, "bm25": 0.5}
+        if query_type in ("detail", "怎么做", "做法"):
+            weights = {"vector": 0.3, "bm25": 0.7}  # prefer keyword match for specific recipes
+        elif query_type in ("list", "推荐", "有哪些", "哪些"):
+            weights = {"vector": 0.7, "bm25": 0.3}  # prefer semantic for broad recommendations
+
         rrf_scores = {}
         doc_map = {}
 
         for rank, doc in enumerate(vec_docs):
             key = doc.metadata.get("chunk_id") or doc.metadata.get("node_id") or str(hash(doc.page_content[:100]))
-            rrf_scores[key] = rrf_scores.get(key, 0) + 1 / (k + rank + 1)
+            rrf_scores[key] = rrf_scores.get(key, 0) + weights["vector"] * 1 / (k + rank + 1)
             doc_map[key] = doc
 
         for rank, doc in enumerate(bm25_docs):
             key = doc.metadata.get("chunk_id") or doc.metadata.get("node_id") or str(hash(doc.page_content[:100]))
-            rrf_scores[key] = rrf_scores.get(key, 0) + 1 / (k + rank + 1)
+            rrf_scores[key] = rrf_scores.get(key, 0) + weights["bm25"] * 1 / (k + rank + 1)
             doc_map[key] = doc
 
         sorted_keys = sorted(rrf_scores, key=lambda k: rrf_scores[k], reverse=True)
