@@ -13,9 +13,9 @@ class GraphRAGConfig:
     milvus_host: str = field(default_factory=lambda: os.getenv("MILVUS_HOST", "localhost"))
     milvus_port: int = field(default_factory=lambda: int(os.getenv("MILVUS_PORT", "19530")))
     milvus_collection_name: str = "cooking_knowledge"
-    milvus_dimension: int = 512
+    milvus_dimension: int = 768
 
-    embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    embedding_model: str = "BAAI/bge-base-zh-v1.5"
     llm_model: str = "deepseek-chat"
     deepseek_api_key: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""))
     deepseek_base_url: str = "https://api.deepseek.com/v1"
