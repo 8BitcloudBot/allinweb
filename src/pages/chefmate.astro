@@ -462,10 +462,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       if (!q) return;
       // Detect which section the chip is in
       if (chip.closest('#demo-graphrag')) {
-        graphragInput.value = q;
-        graphragInput.classList.add('ring-2', 'ring-violet-500/40');
-        setTimeout(() => graphragInput.classList.remove('ring-2', 'ring-violet-500/40'), 600);
-        graphragInput.focus();
+        const gInput = document.getElementById('graphrag-input');
+        if (gInput) {
+          gInput.value = q;
+          gInput.classList.add('ring-2', 'ring-violet-500/40');
+          setTimeout(() => gInput.classList.remove('ring-2', 'ring-violet-500/40'), 600);
+          gInput.focus();
+        }
       } else {
         input.value = q;
         input.classList.add('ring-2', 'ring-primary/40');
