@@ -94,22 +94,34 @@ class GraphRAGRetrieval:
 
 图结构:
 - Recipe: name(菜名), cuisineType(菜系), category, difficulty, servings
-- Ingredient: name(食材名), category
+- Ingredient: name(食材名), category (大类如"蔬菜""肉类""调料")
 - Category: name(分类名)
-- 关系: REQUIRES, BELONGS_TO_CATEGORY, CONTAINS_STEP, SIMILAR_TO, SUBSTITUTE_FOR
+- 关系: REQUIRES (菜→食材), BELONGS_TO_CATEGORY (菜→分类), CONTAINS_STEP (菜→步骤)
 
 当前查询: {clean_query}
 {f'对话上下文: {context_section}' if context_section else ''}
 
 任务:
-1. query_type: multi_hop/subgraph/entity_relation/path_finding/clustering
-2. source_entities: 必须是中文。使用查询中出现的完整实体名，不要截取或翻译。
-   - 如果是追问（如"鸡肉和鱼肉呢？"），从查询和上下文中提取所有相关实体
-   - 例如：上下文讨论"猪肉和牛肉的营养区别"，查询"鸡肉和鱼肉呢？" → source_entities=["鸡肉","鱼肉"]
-3. target_entities: 目标实体。用大类词如"蔬菜""肉类"。无则 []
-4. relation_types: 从 ["REQUIRES","BELONGS_TO_CATEGORY","CONTAINS_STEP","SIMILAR_TO","SUBSTITUTE_FOR"] 选择
-5. max_depth: 2-3
+1. query_type: multi_hop/entity_relation/subgraph/path_finding/clustering
+   - "X配什么Y"或"X搭配什么Y" → multi_hop
+   - "什么菜用了X和Y"或"X和Y一起做的菜" → entity_relation (intersection)
+   - "X能替代什么"或"代替X" → multi_hop
+2. source_entities: 必须是中文完整词。不要截取、合并或翻译。
+   - 追问（如"鸡肉和鱼肉呢？"）→ source_entities=["鸡肉","鱼肉"]
+   - 多实体查询 → 分别列出，如 source_entities=["牛肉","土豆"]
+3. target_entities: 查询中的大类词，用于过滤无关路径。
+   - "配什么蔬菜" → ["蔬菜"]
+   - "和什么肉类" → ["肉类"]
+   - "什么汤" → ["汤羹"]
+   - 无明确大类 → []
+4. relation_types: 从 ["REQUIRES","BELONGS_TO_CATEGORY","CONTAINS_STEP"] 选择
+5. max_depth: 搭配/反向查询=2, 复杂=3
 6. constraints: 属性过滤，无则 {{}}
+
+示例:
+- "鸡肉配什么蔬菜" → {{"query_type":"multi_hop","source_entities":["鸡肉"],"target_entities":["蔬菜"],"relation_types":["REQUIRES"],"max_depth":2}}
+- "什么菜用了牛肉和土豆" → {{"query_type":"entity_relation","source_entities":["牛肉","土豆"],"target_entities":[],"relation_types":["REQUIRES"],"max_depth":2}}
+- "土豆能替代什么食材" → {{"query_type":"multi_hop","source_entities":["土豆"],"target_entities":["食材"],"relation_types":["REQUIRES"],"max_depth":2}}
 
 返回纯JSON（无markdown）:
 {{"query_type":"...","source_entities":["..."],"target_entities":[],"relation_types":["..."],"max_depth":2,"constraints":{{}}}}"""
@@ -157,7 +169,11 @@ class GraphRAGRetrieval:
                 if gq.target_entities:
                     target_filter = """
                     AND ANY(kw IN $target_keywords WHERE
-                        target.name CONTAINS kw OR kw CONTAINS target.name
+                        target.name CONTAINS kw
+                        OR kw CONTAINS target.name
+                        OR (target:Category AND target.name CONTAINS kw)
+                        OR (target:Ingredient AND target.category CONTAINS kw)
+                        OR (target:Recipe AND (target.cuisineType CONTAINS kw OR target.category CONTAINS kw))
                     )"""
                     params["target_keywords"] = gq.target_entities
 
@@ -218,6 +234,58 @@ class GraphRAGRetrieval:
         logger.info(f"Found {len(paths)} graph paths")
         return paths
 
+    def _entity_intersection(self, gq: GraphQuery) -> List[Dict]:
+        """Find recipes connected to ALL source entities (AND intersection)."""
+        recipes_data = []
+        if not self._connected:
+            self._ensure_connected()
+        if not self._connected or len(gq.source_entities) < 2:
+            return recipes_data
+
+        try:
+            with self.driver.session() as session:
+                cypher = """
+                MATCH (r:Recipe)
+                WHERE ALL(term IN $source_entities WHERE EXISTS {
+                    MATCH (r)-[:REQUIRES]->(i:Ingredient)
+                    WHERE i.name CONTAINS term OR i.nodeId = term
+                })
+                WITH r
+                OPTIONAL MATCH (r)-[:REQUIRES]->(i:Ingredient)
+                OPTIONAL MATCH (r)-[:CONTAINS_STEP]->(s:CookingStep)
+                OPTIONAL MATCH (r)-[:BELONGS_TO_CATEGORY]->(c:Category)
+                RETURN r,
+                       collect(DISTINCT i.name) AS ingredients,
+                       count(DISTINCT s) AS step_count,
+                       collect(DISTINCT c.name) AS categories
+                LIMIT 20
+                """
+                result = session.run(cypher, {"source_entities": gq.source_entities})
+                for record in result:
+                    node = record["r"]
+                    recipes_data.append({
+                        "nodes": [{
+                            "id": node.get("nodeId", ""),
+                            "name": node.get("name", ""),
+                            "labels": list(node.labels),
+                            "category": node.get("category", ""),
+                            "cuisine": node.get("cuisineType", ""),
+                            "difficulty": node.get("difficulty", ""),
+                        }],
+                        "relationships": [],
+                        "path_length": 1,
+                        "relevance_score": 0.9,
+                        "path_type": "intersection",
+                        "ingredients": record.get("ingredients", []),
+                        "step_count": record.get("step_count", 0),
+                        "similar_dishes": record.get("similar_dishes", []),
+                    })
+        except Exception as e:
+            logger.error(f"Entity intersection failed: {e}")
+
+        logger.info(f"Intersection found {len(recipes_data)} recipes")
+        return recipes_data
+
     def extract_knowledge_subgraph(self, gq: GraphQuery) -> Dict:
         if not self._connected:
             self._ensure_connected()
@@ -275,7 +343,15 @@ class GraphRAGRetrieval:
 
         results = []
         try:
-            if gq.query_type in [QueryType.MULTI_HOP, QueryType.PATH_FINDING, QueryType.ENTITY_RELATION]:
+            # Intersection path: when 2+ entities AND query asks "what uses X and Y"
+            if len(gq.source_entities) >= 2 and gq.query_type in [QueryType.MULTI_HOP, QueryType.ENTITY_RELATION]:
+                intersection_paths = self._entity_intersection(gq)
+                if intersection_paths:
+                    results = self._intersection_to_documents(intersection_paths, gq.source_entities)
+                else:
+                    paths = self.multi_hop_traversal(gq)
+                    results = self._paths_to_documents(paths)
+            elif gq.query_type in [QueryType.MULTI_HOP, QueryType.PATH_FINDING, QueryType.ENTITY_RELATION]:
                 paths = self.multi_hop_traversal(gq)
                 if not paths and gq.source_entities:
                     logger.info("No paths from primary entities, trying expanded search...")
@@ -325,6 +401,47 @@ class GraphRAGRetrieval:
                     "relevance_score": path.get("relevance_score", 0),
                     "node_count": len(path.get("nodes", [])),
                     "recipe_name": path["nodes"][0].get("name", "") if path.get("nodes") else "",
+                    "search_source": "graph_rag",
+                }
+            ))
+        return docs
+
+    def _intersection_to_documents(self, intersection_paths: List[Dict], source_entities: List[str]) -> List[Document]:
+        docs = []
+        source_str = "、".join(source_entities)
+        for entry in intersection_paths:
+            nodes = entry.get("nodes", [])
+            if not nodes:
+                continue
+            recipe = nodes[0]
+            name = recipe.get("name", "")
+            category = recipe.get("category", "")
+            cuisine = recipe.get("cuisine", "")
+            difficulty = recipe.get("difficulty", "")
+            ings = entry.get("ingredients", [])
+            similar = entry.get("similar_dishes", [])
+
+            desc_parts = [f"菜名: {name}"]
+            if category: desc_parts.append(f"分类: {category}")
+            if cuisine: desc_parts.append(f"菜系: {cuisine}")
+            if difficulty: desc_parts.append(f"难度: {difficulty}")
+            if ings: desc_parts.append(f"食材: {', '.join(ings[:12])}")
+            if similar: desc_parts.append(f"类似菜品: {', '.join(similar)}")
+            readable = " | ".join(desc_parts)
+
+            docs.append(Document(
+                page_content=readable,
+                metadata={
+                    "search_type": "graph_path",
+                    "structured_data": json.dumps({
+                        "path_type": "intersection",
+                        "ingredients": ings,
+                        "similar_dishes": similar,
+                    }, ensure_ascii=False),
+                    "path_length": entry.get("path_length", 1),
+                    "relevance_score": entry.get("relevance_score", 0.9),
+                    "node_count": len(nodes),
+                    "recipe_name": name,
                     "search_source": "graph_rag",
                 }
             ))

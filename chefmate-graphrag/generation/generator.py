@@ -146,11 +146,15 @@ class GenerationIntegrationModule:
 
     def _build_graph_messages(self, query: str, docs: List[Document]) -> list:
         ctx_parts = []
+        intersection_data = None
         for i, d in enumerate(docs[:8]):
             meta = d.metadata
             stype = meta.get("search_type", "")
             if stype == "graph_path":
-                ctx_parts.append(f"[路径 {i+1} 深度={meta.get('path_length','?')}] {d.page_content}")
+                structured = json.loads(meta.get("structured_data", "{}"))
+                if structured.get("path_type") == "intersection":
+                    intersection_data = structured
+                ctx_parts.append(f"[结果 {i+1}] {d.page_content}")
             elif stype in ("subgraph_summary",):
                 ctx_parts.append(f"[子图统计] {d.page_content}")
             elif stype == "subgraph_node":
@@ -168,17 +172,20 @@ class GenerationIntegrationModule:
 
 输出格式要求:
 - 段落之间空一行，保持呼吸感
-- 列表项用 emoji + 文字，如 🥘 菜名、🧄 食材、🏷️ 分类
+- 列表项用 emoji + 文字，如 🥘 菜名、🧄 食材、🏷️ 分类、⭐ 难度
 - 多个发现分点列出，用数字序号（1. 2. 3.）
+- 如果结果中有多道菜，每题单独列出并附分类/难度信息
 - 不要加粗、不要用 ## 标题
-- 如果图谱无结果，如实说明，并建议用户换个方式提问
+- 如果图谱无相关结果，如实说明"目前图谱中未检索到"，并建议用户换个方式提问
 
 示例格式:
 
 通过图谱检索，发现了以下关联:
 
-1. 🥘 大盘鸡 使用了 🧄 土豆、🧄 大蒜、🧄 大葱
-2. 🥘 照烧鸡腿饭 与大盘鸡共享 3 种食材
+1. 🥘 西红柿土豆炖牛肉 🏷️ 家常菜 ⭐ ★★★
+   食材包括: 牛肉、土豆、西红柿...
+2. 🥘 土豆炖排骨 🏷️ 家常菜 ⭐ ★★
+   ...
 
 💡 可以继续追问某道菜的具体做法
 """
