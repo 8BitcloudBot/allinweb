@@ -13,7 +13,7 @@ class ChefMateConfig:
     data_path: str = str(DATA_DIR)
     index_save_path: str = str(INDEX_DIR)
 
-    embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    embedding_model: str = "BAAI/bge-base-zh-v1.5"
 
     hf_endpoint: str = os.getenv("HF_ENDPOINT", "")
     hf_token: str = os.getenv("HF_TOKEN", "")

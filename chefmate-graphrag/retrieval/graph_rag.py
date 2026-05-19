@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
@@ -71,7 +72,7 @@ class GraphRAGRetrieval:
             return
         try:
             self.driver.verify_connectivity()
-        except ServiceUnavailable:
+        except Exception:
             logger.warning("Neo4j connection lost, reconnecting...")
             try:
                 self.driver.close()

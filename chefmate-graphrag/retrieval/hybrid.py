@@ -27,10 +27,17 @@ class MilvusIndexConstructionModule:
         self.chunk_texts: List[str] = []
         self._bm25_corpus: List = []
         self._bm25_index = None
+        self._milvus_ok = False
 
     def _connect(self):
-        connections.connect(host=self.host, port=str(self.port))
-        logger.info(f"Connected to Milvus at {self.host}:{self.port}")
+        try:
+            connections.connect(host=self.host, port=str(self.port), timeout=5)
+            self._milvus_ok = True
+            logger.info(f"Connected to Milvus at {self.host}:{self.port}")
+        except Exception as e:
+            self._milvus_ok = False
+            logger.warning(f"Milvus not available: {e}")
+            self.collection = None
 
     def _init_embeddings(self):
         hf_endpoint = os.getenv("HF_ENDPOINT", "https://hf-mirror.com")
@@ -42,6 +49,8 @@ class MilvusIndexConstructionModule:
         logger.info(f"Embeddings model: {self.model_name}")
 
     def has_collection(self) -> bool:
+        if not self._milvus_ok:
+            return False
         return utility.has_collection(self.collection_name)
 
     def build_vector_index(self, chunks: List[Document]) -> bool:
