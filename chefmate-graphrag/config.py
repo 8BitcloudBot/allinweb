@@ -1,6 +1,19 @@
 import os
+import logging
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
+
+# 本地开发：兼容仓库内 docs/key.md（含 LLM_API_KEY / NEO4J_PASSWORD 等）
+_key_file = os.getenv("KEY_FILE", str(Path(__file__).parent.parent.parent / "docs" / "key.md"))
+if Path(_key_file).exists():
+    for _line in Path(_key_file).read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and "=" in _line and not _line.startswith("#"):
+            _k, _, _v = _line.partition("=")
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 
 @dataclass
@@ -17,8 +30,13 @@ class GraphRAGConfig:
 
     embedding_model: str = "BAAI/bge-base-zh-v1.5"
     llm_model: str = "deepseek-chat"
-    deepseek_api_key: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""))
-    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    # 本地开发用 docs/key.md 的 LLM_API_KEY 兜底；生产环境优先 DEEPSEEK_API_KEY
+    deepseek_api_key: str = field(
+        default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", os.getenv("LLM_API_KEY", ""))
+    )
+    deepseek_base_url: str = field(
+        default_factory=lambda: os.getenv("DEEPSEEK_BASE_URL", os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1"))
+    )
 
     top_k: int = 10
     temperature: float = 0.3
@@ -34,10 +52,11 @@ class GraphRAGConfig:
     monthly_quota: int = field(default_factory=lambda: int(os.getenv("MONTHLY_QUOTA", "3000")))
 
     def __post_init__(self):
+        # 缺失依赖时不再直接崩溃，改为警告；lifespan 会优雅降级（服务可启动、health 反映状态）
         if not self.neo4j_password:
-            raise ValueError("NEO4J_PASSWORD environment variable is not set")
+            logger.warning("NEO4J_PASSWORD 未设置：Neo4j 图检索将不可用（服务仍可启动）")
         if not self.deepseek_api_key:
-            raise ValueError("DEEPSEEK_API_KEY environment variable is not set")
+            logger.warning("DEEPSEEK_API_KEY / LLM_API_KEY 未设置：生成阶段将失败（请配置 docs/key.md）")
 
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "GraphRAGConfig":

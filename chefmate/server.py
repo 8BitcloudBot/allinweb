@@ -229,3 +229,9 @@ async def feedback(body: dict, request: Request):
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "system": "chefmate", "version": "0.1.0"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)

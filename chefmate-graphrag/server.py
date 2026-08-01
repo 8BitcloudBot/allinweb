@@ -326,3 +326,9 @@ async def graphrag_stats():
 @app.get("/api/graphrag/health")
 async def health():
     return {"status": "ok", "errors": system.get("errors", {})}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8001, reload=False)
