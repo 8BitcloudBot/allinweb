@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import time
 import uuid
@@ -234,4 +235,6 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+    # 端口可通过环境变量覆盖，避免与其他服务冲突（默认 8000）
+    port = int(os.getenv("CHEFMATE_PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=False)

@@ -331,4 +331,6 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8001, reload=False)
+    # 端口可通过环境变量覆盖，避免与其他服务冲突（默认 8001）
+    port = int(os.getenv("GRAPHRAG_PORT", "8001"))
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=False)

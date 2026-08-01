@@ -236,8 +236,8 @@ class RecipeRAGSystem:
         try:
             from openai import OpenAI
             client = OpenAI(
-                api_key=self.config.deepseek_api_key,
-                base_url=self.config.deepseek_base_url,
+                api_key=self.config.llm_api_key,
+                base_url=self.config.llm_base_url,
             )
             prompt = f"""你是中餐厨师。用户问了一个问题，请用一段自然流畅的文字描述可能的答案。
 不用列表，就一段话，描述相关的菜品名称、主要食材和做法特点。控制在150字以内。

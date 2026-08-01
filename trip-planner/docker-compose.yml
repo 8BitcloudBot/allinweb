@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  trip-planner:
+    build: .
+    ports:
+      # 仅本机回环暴露，由 nginx 反向代理（/api/chat/stream → 8003）
+      - "127.0.0.1:8003:8003"
+    env_file:
+      - .env
+    environment:
+      - TRIPPLAN_PORT=8003
+    restart: unless-stopped

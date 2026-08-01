@@ -11,6 +11,7 @@ export const SITE = {
     { name: "Blog", path: `${base}blog`, icon: "article" },
     { name: "Projects", path: `${base}projects`, icon: "lightbulb" },
     { name: "ChefMate", path: `${base}chefmate`, icon: "chefmate" },
+    { name: "TripPlan", path: `${base}tripplan`, icon: "tripplan" },
     { name: "Photos", path: `${base}photos`, icon: "image" },
     { name: "About", path: `${base}about`, icon: "user" },
   ],

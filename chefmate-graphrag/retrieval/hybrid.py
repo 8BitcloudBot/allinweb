@@ -9,6 +9,14 @@ import jieba
 
 logger = logging.getLogger(__name__)
 
+# 查询侧停用词：这些词在菜谱语料中高频出现且不携带检索意图，
+# 若参与 BM25 打分会淹没真正的菜名信号。
+_QUERY_STOPWORDS = {
+    "怎么", "怎样", "如何", "做", "做法", "的", "了", "吗", "呢", "啊",
+    "我", "你", "它", "是", "有", "和", "与", "请", "想", "要", "吃",
+    "一下", "一个", "什么", "哪些", "介绍", "教", "下",
+}
+
 
 class MilvusIndexConstructionModule:
     def __init__(self, host: str = "localhost", port: int = 19530,
@@ -28,6 +36,44 @@ class MilvusIndexConstructionModule:
         self.chunk_texts: List[str] = []
         self._bm25_corpus: List = []
         self._bm25_index = None
+        self._dict_loaded = False
+
+    def _load_dish_dict(self, chunks: List[Document]):
+        """将菜名注册进 jieba 词典。
+
+        默认词典会把「宫保鸡丁」切成 ['宫保鸡','丁']，而「丁」是高频噪声词，
+        导致 BM25 召回大量「XX丁」的无关菜品并在 RRF 中挤掉正确结果。
+        """
+        if self._dict_loaded:
+            return
+        names = {
+            c.metadata.get("recipe_name", "").strip()
+            for c in chunks
+            if c.metadata.get("recipe_name")
+        }
+        for name in names:
+            if len(name) >= 2:
+                jieba.add_word(name, freq=10000)
+        self._dict_loaded = True
+        logger.info(f"jieba dish dictionary loaded: {len(names)} names")
+
+    def _build_bm25(self, chunks: List[Document]):
+        """构建 BM25 索引。
+
+        切分后的 chunk 正文往往不含菜名（例如宫保鸡丁的分块正文只有
+        「菜系: 家常菜 难度: ★★★★」），菜名仅存在于 metadata。
+        若直接用 page_content 建索引，查询「宫保鸡丁」在 BM25 侧得分为 0，
+        只能靠「怎么/做」这类噪声词打分，导致所有查询返回雷同结果。
+        因此这里把 recipe_name 前置拼入被索引文本。
+        """
+        self._load_dish_dict(chunks)
+        self._bm25_corpus = chunks
+        tokenized = []
+        for c in chunks:
+            name = c.metadata.get("recipe_name", "")
+            text = f"{name} {c.page_content}" if name else c.page_content
+            tokenized.append(list(jieba.cut(text)))
+        self._bm25_index = BM25Okapi(tokenized)
 
     def _connect(self):
         try:
@@ -114,9 +160,7 @@ class MilvusIndexConstructionModule:
         self.collection.load()
         logger.info(f"Milvus index built: {self.collection.num_entities} entities")
 
-        self._bm25_corpus = chunks
-        tokenized = [list(jieba.cut(c.page_content)) for c in chunks]
-        self._bm25_index = BM25Okapi(tokenized)
+        self._build_bm25(chunks)
         logger.info(f"BM25 index built: {len(chunks)} docs")
 
         return True
@@ -133,9 +177,7 @@ class MilvusIndexConstructionModule:
         """Call after load_collection to rebuild BM25 index from chunk data."""
         if not chunks:
             return
-        self._bm25_corpus = chunks
-        tokenized = [list(jieba.cut(c.page_content)) for c in chunks]
-        self._bm25_index = BM25Okapi(tokenized)
+        self._build_bm25(chunks)
         logger.info(f"BM25 index rebuilt from {len(chunks)} chunks")
 
     def search(self, query_text: str, top_k: int = 10) -> List[Document]:
@@ -172,7 +214,10 @@ class MilvusIndexConstructionModule:
         if not self._bm25_index:
             return vec_docs
 
-        tokenized_query = list(jieba.cut(query))
+        tokenized_query = [
+            t for t in jieba.cut(query)
+            if t.strip() and t not in _QUERY_STOPWORDS
+        ] or list(jieba.cut(query))
         scores = self._bm25_index.get_scores(tokenized_query)
         top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:top_k]
         bm25_docs = []
