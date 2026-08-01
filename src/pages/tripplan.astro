@@ -1,0 +1,257 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="TripPlan | Vincent Hu" description="智能旅行助手 — 多 Agent 行程规划演示">
+  <script is:inline src="/marked.min.js"></script>
+  <div class="mx-auto flex max-w-5xl flex-col gap-8">
+    <!-- Header -->
+    <div class="hero-panel animate-slide-enter overflow-hidden rounded-[2rem] border border-black/8 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-white/10 dark:shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:p-7">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2.5 py-0.5 text-xs font-mono tracking-[0.22em] text-emerald-700 dark:text-emerald-300">AGENT DEMO</span>
+        <span class="text-xs opacity-35">DeepSeek V4 · 高德地图 · Tavily</span>
+      </div>
+      <div class="grid gap-5 lg:grid-cols-[auto_1fr] lg:items-center">
+        <h1 class="text-3xl font-bold font-condensed tracking-tight md:text-4xl shrink-0">TripPlan</h1>
+        <div class="text-sm leading-6 opacity-55 lg:border-l lg:border-black/10 lg:pl-5 dark:lg:border-white/10">
+          基于多 Agent 编排的智能旅行助手，解析需求、检索 POI、生成可落地行程。<br class="hidden sm:block" />
+          <span class="opacity-40 text-xs mt-1 block">API 由笔者自费提供，请勿频繁调用。行程仅供参考，出行前请自行核实。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo -->
+    <div id="tripplan-app" class="animate-slide-enter" style="animation-delay: 100ms;">
+      <div class="grid gap-6 lg:grid-cols-[2fr_1fr] items-start">
+        <!-- Left: Chat area -->
+        <div class="flex flex-col gap-4">
+          <div id="chat-messages" class="flex flex-col gap-5 h-[480px] overflow-y-auto rounded-[1.75rem] border border-black/8 bg-white/52 p-6 dark:border-white/10 dark:bg-white/[0.03]">
+            <div class="flex items-start gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-base dark:bg-emerald-500/20">🧳</div>
+              <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content">
+                你好！我是 <strong>TripPlan</strong>，你的智能旅行助手。<br/>告诉我你的目的地、天数和偏好，我来帮你规划行程。试试「<strong>去成都玩3天，喜欢美食和自然风光</strong>」吧。
+              </div>
+            </div>
+          </div>
+
+          <form id="chat-form" class="flex gap-3">
+            <input
+              id="chat-input"
+              type="text"
+              placeholder="例如：去成都玩3天，喜欢美食和自然风光"
+              class="flex-1 rounded-xl border border-black/8 bg-white/62 px-5 py-3 text-sm outline-none transition-all duration-200 placeholder:opacity-35 focus:border-emerald-500/40 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.12)] dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-emerald-500/40"
+            />
+            <button
+              type="submit"
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg transition-all duration-200 hover:bg-emerald-600 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-40"
+              id="chat-send"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Suggested queries + status -->
+        <div class="flex flex-col gap-4">
+          <div class="h-[480px] flex flex-col rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+            <h3 class="text-xs font-mono tracking-[0.18em] opacity-35 mb-3 shrink-0">PROMPTS</h3>
+            <div class="flex-1 space-y-2.5 overflow-hidden">
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-emerald-500/30" data-query="去成都玩3天，喜欢美食和自然风光">
+                <span class="font-medium opacity-70">成都 3 天</span>
+                <span class="opacity-30 ml-1.5">美食 + 自然</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-emerald-500/30" data-query="一家三口去上海周末2天亲子游，预算适中">
+                <span class="font-medium opacity-70">上海亲子 2 天</span>
+                <span class="opacity-30 ml-1.5">亲子游</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-emerald-500/30" data-query="第一次去日本东京，5天，想逛动漫街和吃拉面">
+                <span class="font-medium opacity-70">东京 5 天</span>
+                <span class="opacity-30 ml-1.5">动漫 + 美食</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-emerald-500/30" data-query="去云南大理丽江7天，喜欢慢节奏和拍照">
+                <span class="font-medium opacity-70">大理丽江 7 天</span>
+                <span class="opacity-30 ml-1.5">慢节奏</span>
+              </button>
+              <button class="prompt-chip w-full text-left rounded-xl border border-black/6 bg-black/[0.015] px-3 py-2.5 text-[11px] leading-snug transition-all duration-150 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] dark:border-white/8 dark:bg-white/[0.02] dark:hover:border-emerald-500/30" data-query="周末去杭州2天，想逛西湖和喝龙井">
+                <span class="font-medium opacity-70">杭州 2 天</span>
+                <span class="opacity-30 ml-1.5">西湖 + 茶</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="status-panel" class="rounded-xl border border-black/10 bg-black/[0.03] px-3 py-3 text-xs leading-relaxed opacity-55 dark:border-white/10 dark:bg-white/[0.04]">
+            <span id="status-text">行程规划结果将在页面左侧生成</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Context panel -->
+      <div id="context-panel" class="mt-6 rounded-[1.75rem] border border-black/8 bg-white/52 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+        <h3 class="text-xs font-mono tracking-[0.18em] opacity-35 mb-4">AGENT CONTEXT</h3>
+        <div id="context-content" class="grid gap-4 lg:grid-cols-3">
+          <div class="text-sm opacity-40 col-span-full">等待查询...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .msg-content :global(ul) { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+  .msg-content :global(ol) { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+  .msg-content :global(h1), .msg-content :global(h2), .msg-content :global(h3) { font-weight: 700; margin: 0.75rem 0 0.35rem; }
+  .msg-content :global(p) { margin: 0.4rem 0; }
+  .msg-content :global(strong) { color: rgb(16 185 129); }
+  .msg-content :global(code) { background: rgba(0,0,0,0.05); padding: 0.1rem 0.3rem; border-radius: 0.3rem; font-size: 0.85em; }
+</style>
+
+<script>
+  const API_URL = '/api/chat/stream';
+  const messages = document.getElementById('chat-messages');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send');
+  const statusPanel = document.getElementById('status-panel');
+  const statusText = document.getElementById('status-text');
+  const contextContent = document.getElementById('context-content');
+
+  function formatMarkdown(text) {
+    if (typeof marked !== 'undefined') {
+      return marked.parse(text, { breaks: true });
+    }
+    return text.replace(/\n/g, '<br/>');
+  }
+
+  function addUserMessage(text) {
+    const div = document.createElement('div');
+    div.className = 'flex items-start gap-3 justify-end';
+    div.innerHTML = `<div class="rounded-2xl rounded-tr-md bg-emerald-500/10 px-4 py-3 text-sm max-w-[85%]">${text.replace(/</g, '&lt;')}</div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function addAssistantMessage() {
+    const div = document.createElement('div');
+    div.className = 'flex items-start gap-3';
+    div.innerHTML = `<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-base dark:bg-emerald-500/20">🧳</div>
+      <div class="rounded-2xl rounded-tl-md bg-black/[0.03] px-4 py-3 text-sm leading-relaxed dark:bg-white/[0.05] msg-content"><span class="inline-block animate-pulse">规划中…</span></div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div.querySelector('.msg-content');
+  }
+
+  function updateStatus(state) {
+    if (!statusPanel || !statusText) return;
+    if (state === 'loading') {
+      statusText.textContent = '正在解析需求并检索信息…';
+      statusPanel.style.opacity = '0.75';
+    } else if (state === 'ready') {
+      statusText.textContent = '行程已生成 ↓';
+      statusPanel.style.opacity = '0.8';
+    } else if (state === 'error') {
+      statusText.textContent = '生成失败，请检查后端服务是否启动';
+      statusPanel.style.opacity = '0.75';
+    } else {
+      statusText.textContent = '行程规划结果将在页面左侧生成';
+      statusPanel.style.opacity = '0.55';
+    }
+  }
+
+  function updateContext(ctx) {
+    if (!contextContent) return;
+    if (!ctx) { contextContent.innerHTML = '<div class="text-sm opacity-40 col-span-full">等待查询...</div>'; return; }
+    const cards = [];
+    cards.push(`<div class="rounded-xl border border-black/6 bg-black/[0.015] p-4 dark:border-white/8 dark:bg-white/[0.02]">
+        <div class="text-[11px] font-mono tracking-wider opacity-40 mb-1">DESTINATION</div>
+        <div class="text-sm font-semibold opacity-80">${ctx.destination || '—'}</div>
+        <div class="text-xs opacity-40 mt-1">${ctx.days ? ctx.days + ' 天' : ''}</div>
+      </div>`);
+    cards.push(`<div class="rounded-xl border border-black/6 bg-black/[0.015] p-4 dark:border-white/8 dark:bg-white/[0.02]">
+        <div class="text-[11px] font-mono tracking-wider opacity-40 mb-1">RETRIEVAL</div>
+        <div class="text-sm opacity-70">高德 POI：${ctx.poi_count || 0}</div>
+        <div class="text-sm opacity-70">Tavily：${ctx.search_count || 0}</div>
+      </div>`);
+    cards.push(`<div class="rounded-xl border border-black/6 bg-black/[0.015] p-4 dark:border-white/8 dark:bg-white/[0.02]">
+        <div class="text-[11px] font-mono tracking-wider opacity-40 mb-1">TOOLS</div>
+        <div class="text-sm opacity-70">高德地图：${ctx.amap ? '✅' : '⚪'}</div>
+        <div class="text-sm opacity-70">Tavily：${ctx.tavily ? '✅' : '⚪'}</div>
+      </div>`);
+    contextContent.innerHTML = cards.join('');
+  }
+
+  // SSE 解析：fetch + 手动读取流
+  async function sendQuery(query) {
+    if (!query.trim()) return;
+    addUserMessage(query);
+    const msgDiv = addAssistantMessage();
+    updateStatus('loading');
+    sendBtn.disabled = true;
+    input.value = '';
+
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.body) throw new Error('无响应流');
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let collected = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || '';
+        for (const evt of events) {
+          const lines = evt.split('\n');
+          let eventName = 'message';
+          let dataStr = '';
+          for (const line of lines) {
+            if (line.startsWith('event:')) eventName = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+          }
+          if (!dataStr) continue;
+          try {
+            const payload = JSON.parse(dataStr);
+            if (eventName === 'context') {
+              updateContext(payload);
+            } else if (eventName === 'token') {
+              collected += payload;
+              msgDiv.innerHTML = formatMarkdown(collected);
+              messages.scrollTop = messages.scrollHeight;
+            } else if (eventName === 'error') {
+              msgDiv.textContent = '❌ ' + (payload.error || '生成失败');
+              updateStatus('error');
+            } else if (eventName === 'done') {
+              updateStatus('ready');
+            }
+          } catch (e) { /* ignore parse error */ }
+        }
+      }
+    } catch (err) {
+      updateStatus('error');
+      msgDiv.textContent = '❌ 请求失败: ' + err.message + '（请确认后端服务已在 localhost:8000 启动）';
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    sendQuery(input.value);
+  });
+
+  document.querySelectorAll('.prompt-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      if (q) sendQuery(q);
+    });
+  });
+</script>
